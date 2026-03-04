@@ -187,6 +187,11 @@
             letter-spacing: 1px;
         }
 
+        #section-kullanicilar .admin-table th,
+        #section-kullanicilar .admin-table td {
+            color: #000 !important;
+        }
+
         /* SAĞ ÖN İZLEME */
         .preview-sticky {
             position: sticky;
@@ -831,7 +836,7 @@ list.innerHTML = displayOrders.map((o, idx) => {
             let users = [];
             users = await API.getUsers();
             
-            list.innerHTML = users.map(u => `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.phone || '-'}</td></tr>`).join('');
+            list.innerHTML = users.map(u => `<tr><td style="color:#000;">${u.name}</td><td style="color:#000;">${u.email}</td><td style="color:#000;">${u.phone || '-'}</td></tr>`).join('');
         }
 
         // Başlangıçta siparişler açık
