@@ -368,7 +368,27 @@
         async function renderOrders() {
             const ordersContainer = document.getElementById('orders-section'); // HTML'deki sipariş alanı ID'si
             let allOrders = [];
-            allOrders = await API.getOrders();
+            try {
+                allOrders = await API.getOrders();
+            } catch (error) {
+                const errorText = String(error?.message || '');
+                const tokenMissing = !sessionStorage.getItem('authToken');
+                const unauthorized = tokenMissing || errorText.includes('401') || errorText.toLowerCase().includes('yetkisiz');
+
+                if (unauthorized) {
+                    ordersContainer.innerHTML = '<p style="text-align:center; color:#666; margin-top:20px;">Oturumunuz yenilenmeli. Siparişlerinizi görmek için lütfen tekrar giriş yapın.</p>';
+                    setTimeout(() => {
+                        sessionStorage.removeItem('isLoggedIn');
+                        sessionStorage.removeItem('userRole');
+                        sessionStorage.removeItem('authToken');
+                        window.location.href = 'profilim.html';
+                    }, 1200);
+                    return;
+                }
+
+                ordersContainer.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">Siparişler yüklenemedi. Lütfen tekrar deneyin.</p>';
+                return;
+            }
             const whatsappNumber = localStorage.getItem('que_whatsapp_number');
 
             // API artık kullanıcıya göre filtrelenmiş sipariş döndürüyor

@@ -427,7 +427,17 @@
 
             // Giriş kontrolü (misafir ödeme seçeneğini destekler)
             const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            const authToken = sessionStorage.getItem('authToken');
             const checkoutMode = sessionStorage.getItem('checkout_mode') || (isLoggedIn ? 'member' : 'guest');
+
+            if (isLoggedIn && !authToken) {
+                alert('Oturumunuz güncellendi. Lütfen tekrar giriş yapınız.');
+                sessionStorage.removeItem('isLoggedIn');
+                sessionStorage.removeItem('userRole');
+                sessionStorage.removeItem('authToken');
+                window.location.href = 'profilim.html';
+                return;
+            }
 
             if (!isLoggedIn && checkoutMode === 'member') {
                 alert('Ödemeye devam etmek için lütfen giriş yapınız.');
