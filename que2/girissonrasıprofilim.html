@@ -302,8 +302,25 @@
         }
 
         function saveInfo() {
-            sessionStorage.setItem('userPhone', document.getElementById('p-phone').value);
-            sessionStorage.setItem('userAddress', document.getElementById('p-address').value);
+            const fullName = (document.getElementById('p-name').value || '').trim();
+            const phone = (document.getElementById('p-phone').value || '').trim();
+            const address = (document.getElementById('p-address').value || '').trim();
+
+            sessionStorage.setItem('currentUser', fullName);
+            sessionStorage.setItem('userPhone', phone);
+            sessionStorage.setItem('userAddress', address);
+
+            const nameParts = fullName ? fullName.split(/\s+/) : [];
+            const shippingInfo = JSON.parse(sessionStorage.getItem('que_shipping_info')) || {};
+            const mergedShipping = {
+                ...shippingInfo,
+                name: nameParts[0] || shippingInfo.name || '',
+                surname: nameParts.slice(1).join(' ') || shippingInfo.surname || '',
+                phone: phone || shippingInfo.phone || '',
+                address: address || shippingInfo.address || ''
+            };
+            sessionStorage.setItem('que_shipping_info', JSON.stringify(mergedShipping));
+
             alert("Bilgileriniz başarıyla güncellendi ✨");
         }
 

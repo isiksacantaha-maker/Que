@@ -247,17 +247,39 @@ function saveShippingInfo() {
 
     const shippingInfo = { name, surname, phone, address, city, zip };
     sessionStorage.setItem('que_shipping_info', JSON.stringify(shippingInfo));
+    sessionStorage.setItem('userPhone', phone);
+    sessionStorage.setItem('userAddress', address);
     return true;
 }
 
 function loadShippingInfo() {
     const info = JSON.parse(sessionStorage.getItem('que_shipping_info')) || {};
-    if (document.getElementById('ship-name')) document.getElementById('ship-name').value = info.name || '';
-    if (document.getElementById('ship-surname')) document.getElementById('ship-surname').value = info.surname || '';
-    if (document.getElementById('ship-phone')) document.getElementById('ship-phone').value = info.phone || '';
-    if (document.getElementById('ship-address')) document.getElementById('ship-address').value = info.address || '';
-    if (document.getElementById('ship-city')) document.getElementById('ship-city').value = info.city || '';
-    if (document.getElementById('ship-zip')) document.getElementById('ship-zip').value = info.zip || '';
+    const currentUser = (sessionStorage.getItem('currentUser') || '').trim();
+    const userPhone = (sessionStorage.getItem('userPhone') || '').trim();
+    const userAddress = (sessionStorage.getItem('userAddress') || '').trim();
+
+    const nameParts = currentUser ? currentUser.split(/\s+/) : [];
+    const fallbackName = nameParts[0] || '';
+    const fallbackSurname = nameParts.slice(1).join(' ');
+
+    const mergedInfo = {
+        name: info.name || fallbackName,
+        surname: info.surname || fallbackSurname,
+        phone: info.phone || userPhone,
+        address: info.address || userAddress,
+        city: info.city || '',
+        zip: info.zip || ''
+    };
+
+    if (mergedInfo.name || mergedInfo.surname || mergedInfo.phone || mergedInfo.address || mergedInfo.city || mergedInfo.zip) {
+        sessionStorage.setItem('que_shipping_info', JSON.stringify(mergedInfo));
+    }
+    if (document.getElementById('ship-name')) document.getElementById('ship-name').value = mergedInfo.name || '';
+    if (document.getElementById('ship-surname')) document.getElementById('ship-surname').value = mergedInfo.surname || '';
+    if (document.getElementById('ship-phone')) document.getElementById('ship-phone').value = mergedInfo.phone || '';
+    if (document.getElementById('ship-address')) document.getElementById('ship-address').value = mergedInfo.address || '';
+    if (document.getElementById('ship-city')) document.getElementById('ship-city').value = mergedInfo.city || '';
+    if (document.getElementById('ship-zip')) document.getElementById('ship-zip').value = mergedInfo.zip || '';
 }
 
 function processPayment() {
