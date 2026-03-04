@@ -85,6 +85,10 @@
                 <div class="upload-zone" id="drop-zone">
                     <i class="fas fa-images"></i>
                     <p>Fotoğrafları Sürükleyin (En Fazla 5)</p>
+                    <button type="button" class="btn-cancel" style="margin-bottom: 12px;" onclick="openEditFilePicker(event)">
+                        <i class="fas fa-folder-open"></i> DOSYA SEÇ
+                    </button>
+                    <input type="file" id="edit-image-input" accept="image/*" multiple style="display:none;">
                     <div id="image-previews" class="preview-grid"></div>
                 </div>
 
@@ -151,6 +155,10 @@
                 <div class="upload-zone" id="drop-zone-add">
                     <i class="fas fa-images"></i>
                     <p>Fotoğrafları Sürükleyin (En Fazla 5)</p>
+                    <button type="button" class="btn-cancel" style="margin-bottom: 12px;" onclick="openAddFilePicker(event)">
+                        <i class="fas fa-folder-open"></i> DOSYA SEÇ
+                    </button>
+                    <input type="file" id="add-image-input" accept="image/*" multiple style="display:none;">
                     <div id="image-previews-add" class="preview-grid"></div>
                 </div>
 

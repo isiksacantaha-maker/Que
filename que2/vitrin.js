@@ -296,7 +296,16 @@ async function openEditPanel(id) {
 
 function setupDropZone() {
     const dropZone = document.getElementById('drop-zone');
+    const editInput = document.getElementById('edit-image-input');
     if (!dropZone) return;
+
+    if (editInput) {
+        editInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files || []);
+            if (files.length > 0) handleFiles(files);
+            editInput.value = '';
+        });
+    }
 
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -316,7 +325,16 @@ function setupDropZone() {
 /* ÜRÜN EKLEME DROP ZONE */
 function setupAddDropZone() {
     const dropZone = document.getElementById('drop-zone-add');
+    const addInput = document.getElementById('add-image-input');
     if (!dropZone) return;
+
+    if (addInput) {
+        addInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files || []);
+            if (files.length > 0) handleAddFiles(files);
+            addInput.value = '';
+        });
+    }
 
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -403,6 +421,24 @@ function updateImagePreviews() {
 function removeImage(index) {
     currentEditImages.splice(index, 1);
     updateImagePreviews();
+}
+
+function openEditFilePicker(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const input = document.getElementById('edit-image-input');
+    if (input) input.click();
+}
+
+function openAddFilePicker(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const input = document.getElementById('add-image-input');
+    if (input) input.click();
 }
 
 /* ==========================================================================
