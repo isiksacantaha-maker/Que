@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sepetim | Que Jewelry</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="üstpanel.css">
+    <style>
+        body {
+            background-color: #fcfcfc;
+            margin: 0;
+            padding-top: 120px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .cart-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 40px;
+        }
+
+        h2 {
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            grid-column: span 2;
+        }
+
+        /* Sol: Ürün Listesi */
+        .cart-items {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+            gap: 20px;
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-img {
+            width: 100px;
+            height: 130px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-info h4 {
+            margin: 0 0 5px;
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .item-info p {
+            color: #999;
+            font-size: 13px;
+            margin: 0;
+        }
+
+        /* Adet Kontrolü */
+        .qty-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .qty-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid #0e0202;
+            background: #fff;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .qty-btn:hover {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .item-price {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .remove-item {
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        /* Sağ: Özet Paneli */
+        .cart-summary {
+            background: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            height: fit-content;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+            position: sticky;
+            top: 140px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #f9f9f9;
+            font-weight: 700;
+            font-size: 18px;
+            color: #000;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 18px;
+            border-radius: 35px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 2px;
+            margin-top: 25px;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .checkout-btn:hover {
+            background: #d4af37;
+            color: #000;
+        }
+
+        #empty-cart {
+            text-align: center;
+            padding: 100px 0;
+            display: none;
+            grid-column: span 2;
+        }
+
+        @media (max-width: 900px) {
+            .cart-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="anasayfa.html" class="nav-link">Ana Sayfa</a>
+            <a href="vitrin.html" class="nav-link">Koleksiyon</a>
+        </div>
+        <div class="nav-right">
+            <a href="begendiklerim.html" class="nav-link">❤</a>
+            <a href="javascript:void(0)" onclick="goProfile()" class="nav-link">👤</a>
+            <a href="sepetim.html" class="nav-link">🛒<span id="cart-count" class="cart-badge">0</span></a>
+        </div>
+    </nav>
+
+    <div class="cart-container">
+        <h2>Sepetim</h2>
+
+        <div id="cart-items-list" class="cart-items">
+        </div>
+
+        <div id="summary-panel" class="cart-summary">
+            <h3 style="font-weight: 400; margin-bottom: 25px;">SİPARİŞ ÖZETİ</h3>
+            <div class="summary-row">
+                <span>Ara Toplam</span>
+                <span id="subtotal">0 TL</span>
+            </div>
+            <div class="summary-row">
+                <span>Kargo</span>
+                <span id="shipping">Ücretsiz</span>
+            </div>
+            <div class="total-row">
+                <span>TOPLAM</span>
+                <span id="grand-total">0 TL</span>
+            </div>
+            <button class="checkout-btn" onclick="proceedToPayment()">ÖDEMEYE GEÇ</button>
+        </div>
+
+        <div id="empty-cart">
+            <div style="font-size: 50px; margin-bottom: 20px;">🛒</div>
+            <p style="color: #999;">Sepetiniz şu an boş.</p>
+            <a href="vitrin.html" style="color: #000; text-decoration: underline; font-size: 14px;">Alışverişe Başla</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        window.onload = () => {
+            renderCart();
+            updateCartUI(); // Navbar sayacını güncelle
+        };
+    </script>
+</body>
+
+</html>

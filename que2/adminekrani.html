@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetim Paneli | Que Jewelry</title>
+    <link rel="stylesheet" href="üstpanel.css">
+    <style>
+        body {
+            background-color: #f8f8f8;
+            margin: 0;
+            padding-top: 130px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .admin-main-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 30px;
+        }
+
+        .admin-main-grid.full-width {
+            grid-template-columns: 250px 1fr;
+        }
+
+        /* SOL PANEL (Sidebar) */
+        .admin-sidebar {
+            background: #fff;
+            border-radius: 25px;
+            padding: 20px;
+            height: fit-content;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        }
+
+        .admin-tab {
+            padding: 15px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: 0.3s;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        .admin-tab:hover {
+            background: #f9f9f9;
+            color: #000;
+        }
+
+        .admin-tab.active {
+            background: #000;
+            color: #fff;
+        }
+
+        /* ORTA KART */
+        .admin-card {
+            background: #fff;
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+            min-height: 600px;
+        }
+
+        h2 {
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-size: 18px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        /* FORM ELEMANLARI */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 10px;
+            color: #bbb;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 15px;
+            border: 1px solid #eee;
+            outline: none;
+            transition: 0.3s;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        input:focus {
+            border-color: #d4af37;
+            background: #fff;
+        }
+
+        /* SÜRÜKLE BIRAK ALANI */
+        .upload-zone {
+            border: 2px dashed #eee;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            color: #aaa;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+
+        .upload-zone.dragover {
+            border-color: #d4af37;
+            background: #fffcf0;
+            color: #d4af37;
+        }
+
+        .image-previews {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .img-slot {
+            aspect-ratio: 2/3;
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.02);
+        }
+
+        .img-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .slot-tag {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            padding: 3px 6px;
+            border-radius: 5px;
+            font-size: 9px;
+            z-index: 2;
+        }
+
+        /* TABLO TASARIMI (Siparişler/Kullanıcılar) */
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 13px;
+        }
+
+        .admin-table th {
+            color: #aaa;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 1px;
+        }
+
+        /* SAĞ ÖN İZLEME */
+        .preview-sticky {
+            position: sticky;
+            top: 150px;
+            text-align: center;
+        }
+
+        .live-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #d4af37;
+            margin-bottom: 20px;
+            display: block;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* MERKEZİ ŞIK ONAY MODALI */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .confirm-modal {
+            background: #fff;
+            color: #1a1a1a;
+            padding: 50px;
+            border-radius: 40px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-overlay.active .confirm-modal {
+            transform: scale(1);
+        }
+
+        .modal-btns {
+            display: flex;
+            gap: 15px;
+            margin-top: 35px;
+        }
+
+        .btn-m {
+            flex: 1;
+            padding: 18px;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-m-yes {
+            background: #000;
+            color: #fff;
+        }
+
+        .btn-m-yes:hover {
+            background: #d4af37;
+            color: #000;
+            transform: translateY(-3px);
+        }
+
+        .btn-m-no {
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="anasayfa.html" class="nav-link">Ana Sayfa</a>
+            <a href="vitrin.html" class="nav-link">Koleksiyon</a>
+        </div>
+        <div class="nav-right">
+            <a href="begendiklerim.html" class="nav-link">❤</a>
+            <a href="javascript:void(0)" onclick="goProfile()" class="nav-link">👤</a>
+            <a href="sepetim.html" class="nav-link">🛒<span id="cart-count" class="cart-badge">0</span></a>
+        </div>
+    </nav>
+
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="confirm-modal">
+            <span style="font-size: 50px; display: block; margin-bottom: 20px;">✨</span>
+            <h3 style="font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 15px;">Ürün
+                Yayınlansın mı?</h3>
+            <p style="color: #888; font-size: 14px; line-height: 1.6;">Tasarladığınız bu ürün anında vitrin sayfasında
+                listelenecektir.</p>
+            <div class="modal-btns">
+                <button class="btn-m btn-m-no" onclick="closeModal()">VAZGEÇ</button>
+                <button class="btn-m btn-m-yes" onclick="finalPublish()">YAYINLA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SİPARİŞ DETAY MODALI (YENİ) -->
+    <div id="order-detail-modal" class="modal-overlay">
+        <div class="confirm-modal" style="max-width: 600px; width: 90%; text-align: left; cursor: default;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <h3 style="margin:0; font-size:16px;">SİPARİŞ İÇERİĞİ</h3>
+                <button onclick="closeOrderModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999;">&times;</button>
+            </div>
+            <div id="order-detail-content" style="max-height: 60vh; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- TESLİMAT ADRESİ MODALI (YENİ) -->
+    <div id="address-detail-modal" class="modal-overlay">
+        <div class="confirm-modal" style="max-width: 500px; width: 90%; text-align: left; cursor: default;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <h3 style="margin:0; font-size:16px;">TESLİMAT BİLGİLERİ</h3>
+                <button onclick="closeAddressModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999;">&times;</button>
+            </div>
+            <div id="address-detail-content" style="font-size: 14px; line-height: 1.7;"></div>
+        </div>
+    </div>
+
+    <div class="admin-main-grid" id="main-grid">
+        <div class="admin-sidebar">
+            <div class="admin-tab active" onclick="switchSection('siparisler')">Siparişler</div>
+            <div class="admin-tab" onclick="switchSection('kullanicilar')">Kullanıcılar</div>
+            <div class="admin-tab external-link" onclick="window.location.href='vitrin.html'">Vitrine Git ↗</div>
+            <div class="admin-tab logout-item" onclick="handleLogout()">
+                Oturumu Kapat <i class="fas fa-sign-out-alt" style="margin-left: 10px;"></i>
+            </div>
+        </div>
+
+        <div class="admin-card">
+
+            <div id="section-siparisler">
+                <div style="margin-bottom: 20px; background: #fafafa; padding: 15px; border-radius: 15px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div>
+                        <span style="font-size: 12px; color: #999; text-transform: uppercase;">Duruma Göre:</span>
+                        <select id="order-filter" onchange="renderAdminOrders()" style="width: auto; margin-left: 10px; padding: 8px; border-radius: 8px; border: 1px solid #ddd;">
+                            <option value="Hepsi">Tüm Siparişler</option>
+                            <option value="Havale Bekleniyor">Havale Bekleyenler</option>
+                            <option value="Hazırlanıyor">Hazırlananlar</option>
+                            <option value="Yolda">Yolda Olanlar</option>
+                            <option value="Tamamlandı">Tamamlananlar</option>
+                            <option value="İptal Edildi">İptal Edilenler</option>
+                            <option value="İade Talebi">İade Talepleri</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <input type="search" id="order-search" oninput="renderAdminOrders()" placeholder="Sipariş Numarası ile Ara... (#QUE123456)" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd;">
+                    </div>
+                    <div>
+                        <button onclick="exportOrdersToExcel()" style="padding: 8px 15px; background: #1D6F42; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 5px;"><i class="fas fa-file-excel"></i> SİPARİŞLERİ AKTAR</button>
+                    </div>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Ürünler</th>
+                            <th>Teslimat Adresi</th>
+                            <th>Kargo Şirketi</th>
+                            <th>Takip No</th>
+                            <th>Durum</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-order-list"></tbody>
+                </table>
+            </div>
+
+            <div id="section-kullanicilar" class="hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; padding-bottom: 15px;">
+                   <h2 style="margin:0; padding:0; border:none; color: #666666;">Kullanıcı Veri Bankası</h2>
+                    <button onclick="exportUsersToExcel()" style="padding: 8px 15px; background: #1D6F42; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 5px;"><i class="fas fa-file-excel"></i> KULLANICILARI AKTAR</button>
+                </div>
+                <table class="admin-table">
+    <thead>
+        <tr>
+            <th style="color: #000000 !important; font-weight: 700 !important;">Ad Soyad</th>
+            <th style="color: #000000 !important; font-weight: 700 !important;">E-Posta</th>
+            <th style="color: #000000 !important; font-weight: 700 !important;">Telefon</th>
+        </tr>
+    </thead>
+    <tbody id="admin-user-list"></tbody>
+</table>
+            </div>
+        </div>
+
+        <div id="preview-column" class="preview-sticky hidden">
+            <span class="live-label">CANLI ÖN İZLEME</span>
+            <div id="live-card-container"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // KARGO ŞİRKETLERİ VE API ENTEGRASYONU
+        const cargoProviders = {
+            'ARAS': {
+                name: 'Aras Kargo',
+                api: 'https://api.araskargo.com.tr/tracking',
+                apiKey: 'demo_key_aras'
+            },
+            'SURAT': {
+                name: 'Sürat Kargo',
+                api: 'https://api.suratkargo.com.tr/track',
+                apiKey: 'demo_key_surat'
+            },
+            'TICIEX': {
+                name: 'Ticiex Kargo',
+                api: 'https://api.ticiex.com/track',
+                apiKey: 'demo_key_ticiex'
+            },
+            'PTT': {
+                name: 'PTT Kargo',
+                api: 'https://api.ptt.gov.tr/track',
+                apiKey: 'demo_key_ptt'
+            },
+            'MNG': {
+                name: 'MNG Kargo',
+                api: 'https://api.mngkargo.com.tr/track',
+                apiKey: 'demo_key_mng'
+            }
+        };
+
+        // Kargo şirketi API'ı çağır
+        async function callCargoAPI(provider, trackingNumber) {
+            try {
+                const config = cargoProviders[provider];
+                if (!config) return null;
+
+                // Gerçek API çağrısı (şu anki ortamda mock)
+                const response = await fetch(config.api + '?tracking=' + trackingNumber + '&key=' + config.apiKey)
+                    .catch(e => {
+                        // API ulaşılamazsa mock veri döndür
+                        console.log(`${config.name} API'sı bağlanılamadı. Mock veriler kullanılıyor.`);
+                        return null;
+                    });
+
+                if (response && response.ok) {
+                    return await response.json();
+                }
+            } catch (err) {
+                console.log(`Kargo API hatası: ${err.message}`);
+            }
+
+            // Mock veri (API ulaşılamazsa veya hata varsa)
+            return {
+                trackingNumber: trackingNumber,
+                provider: cargoProviders[provider].name,
+                status: 'Yolda',
+                lastUpdate: new Date().toLocaleString('tr-TR'),
+                location: 'Dağıtım Merkezinde'
+            };
+        }
+
+        // EXCEL'E AKTARMA FONKSİYONLARI (YENİ)
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' }); // \uFEFF for BOM to handle UTF-8 in Excel
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        function convertToCSV(data, headers) {
+            const headerRow = headers.join(',');
+            const rows = data.map(row => {
+                return headers.map(header => {
+                    // Sanitize data: escape commas and quotes
+                    let cell = row[header] === null || row[header] === undefined ? '' : String(row[header]);
+                    cell = cell.replace(/"/g, '""');
+                    if (cell.search(/("|,|\n)/g) >= 0) {
+                        cell = `"${cell}"`;
+                    }
+                    return cell;
+                }).join(',');
+            });
+            return [headerRow, ...rows].join('\n');
+        }
+
+        async function exportOrdersToExcel() {
+            let orders = [];
+            orders = await API.getOrders();
+            
+            if (orders.length === 0) {
+                alert('Dışa aktarılacak sipariş bulunmuyor.');
+                return;
+            }
+
+            const headers = ['Sipariş ID', 'Tarih', 'Durum', 'Müşteri Adı', 'Müşteri Telefon', 'Müşteri Şehir', 'Müşteri Adres', 'Ürünler', 'Toplam Tutar', 'Kargo Firması', 'Takip Numarası'];
+            const data = orders.map(o => ({ 'Sipariş ID': o.orderNumber, 'Tarih': o.date, 'Durum': o.status, 'Müşteri Adı': o.shippingInfo?.name || '', 'Müşteri Telefon': o.shippingInfo?.phone || '', 'Müşteri Şehir': o.shippingInfo?.city || '', 'Müşteri Adres': o.shippingInfo?.address || '', 'Ürünler': (o.items || []).map(item => `${item.quantity}x ${item.name}`).join('; '), 'Toplam Tutar': o.total, 'Kargo Firması': o.cargo?.cargoName || '', 'Takip Numarası': o.cargo?.trackingNumber || '' }));
+
+            const csv = convertToCSV(data, headers);
+            downloadCSV(csv, 'siparisler.csv');
+        }
+
+        async function exportUsersToExcel() {
+            let users = [];
+            users = await API.getUsers();
+
+            if (users.length === 0) {
+                alert('Dışa aktarılacak kullanıcı bulunmuyor.');
+                return;
+            }
+
+            const headers = ['İsim Soyad', 'E-Posta', 'Telefon'];
+            const data = users.map(u => ({ 'İsim Soyad': u.name, 'E-Posta': u.email, 'Telefon': u.phone || '' }));
+            const csv = convertToCSV(data, headers);
+            downloadCSV(csv, 'kullanicilar.csv');
+        }
+
+        let uploadedImages = [];
+
+        // 1. SEKMELER ARASI GEÇİŞ
+        function switchSection(target) {
+            document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('section-' + target).classList.remove('hidden');
+            event.target.classList.add('active');
+
+            if (target === 'siparisler') {
+                renderAdminOrders();
+            } else if (target === 'kullanicilar') {
+                renderAdminUsers();
+            }
+        }
+
+        // 4. LİSTELEME FONKSİYONLARI (Siparişler/Kullanıcılar)
+        async function renderAdminOrders() {
+            const list = document.getElementById('admin-order-list');
+            const filter = document.getElementById('order-filter').value;
+            const searchTerm = document.getElementById('order-search').value.trim().toLowerCase();
+            let originalOrders = [];
+            originalOrders = await API.getOrders();
+            
+            // En yeni siparişlerin üstte görünmesi için listeyi ters çeviriyoruz
+            let displayOrders = [...originalOrders].reverse();
+
+            // YENİ: Tamamlanmış ve 40 günü geçmiş siparişleri gizle
+            const fortyDaysAgo = new Date();
+            fortyDaysAgo.setDate(fortyDaysAgo.getDate() - 40); // 30'dan 40'a çıkarıldı
+
+            displayOrders = displayOrders.filter(o => {
+                // Eğer sipariş tamamlandıysa ve tamamlanma tarihi varsa kontrol et
+                if (o.status === 'Tamamlandı' && o.completionDate) {
+                    return new Date(o.completionDate) > fortyDaysAgo;
+                }
+                return true; // Diğer tüm siparişleri (hazırlanan, bekleyen vb.) listede tut
+            });
+
+if (filter !== "Hepsi") displayOrders = displayOrders.filter(o => o.status.includes(filter));
+
+if (searchTerm) {
+    displayOrders = displayOrders.filter(o => o.orderNumber && o.orderNumber.toLowerCase().includes(searchTerm));
+}
+
+list.innerHTML = displayOrders.map((o, idx) => {
+    if (!o.orderNumber) return ''; // Bozuk veriyi atla
+    const itemsCount = o.items ? o.items.length : 0;
+    const cargo = o.cargo || {};
+    const ship = o.shippingInfo || {};
+    const cargoOptions = Object.entries(cargoProviders)
+        .map(([key, val]) => `<option value="${key}" ${cargo.provider === key ? 'selected' : ''}>${val.name}</option>`)
+        .join('');
+    
+    const sanitizedId = o.orderNumber.replace('#', ''); // HTML id'leri için temizlenmiş ID
+
+                // Satır Rengi Belirleme
+                let rowStyle = "";
+                if (o.status === 'İptal Edildi') {
+                    rowStyle = "background-color: #ffebee;"; // Açık Kırmızı
+                } else if (o.status === 'İade Talebi') {
+                    rowStyle = "background-color: #f3e5f5;"; // Açık Mor
+                }
+
+                // YENİ: Aksiyon Butonu Belirleme
+                let actionButton = '';
+                if (o.status === 'Havale Bekleniyor') {
+                    actionButton = `<button onclick="confirmPayment('${o.orderNumber}')" style="background:#3498db; color:white; border:none; padding: 8px 12px; font-size:10px; border-radius:5px; cursor:pointer; width: 100%; font-weight:600;">ÖDEMEYİ ONAYLA</button>`;
+                } else {
+                    actionButton = `<button onclick="updateOrder('${o.orderNumber}')" style="background:#27ae60; color:white; border:none; padding: 6px 12px; font-size:10px; border-radius:5px; cursor:pointer;">GÜNCELLE</button>`;
+                }
+
+
+                return `
+                    <tr style="${rowStyle}">
+                        <td style="vertical-align: middle;">
+                            <button onclick="openOrderDetails('${o.orderNumber}')" style="background: #fff; border: 1px solid #d4af37; color: #d4af37; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s; display: flex; align-items: center; gap: 5px;">
+                                <i class="fas fa-list"></i> ${itemsCount} Ürün (Listeyi Gör)
+                            </button>
+                        </td>
+                        <td style="vertical-align: middle;">
+                            <button onclick="openAddressDetails('${o.orderNumber}')" style="border:1px solid #ccc; background:#fff; cursor:pointer; font-size:11px; padding:8px 12px; border-radius:8px; display: flex; align-items: center; gap: 5px;"><i class="fas fa-map-marker-alt" style="margin-right: 5px;"></i> Adresi Gör</button>
+                        </td>
+                        <td style="vertical-align: middle;">
+                            <select id="cargo-select-${sanitizedId}" style="font-size:11px;">
+                                <option value="">Kargo Seç...</option>
+                                ${cargoOptions}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" id="tracking-no-${sanitizedId}" value="${cargo.trackingNumber || ''}" placeholder="Takip No Gir..." style="font-size:11px; padding: 6px; width: 140px; border-radius: 5px;">
+                        </td>
+                        <td style="vertical-align: middle;">
+                            <select id="status-select-${sanitizedId}" style="font-size:11px;">
+                                <option ${o.status.startsWith('Havale') ? 'selected' : ''}>Havale Bekleniyor</option>
+                                <option ${o.status.startsWith('Ödendi') ? 'selected' : ''}>Ödendi - Hazırlanıyor</option>
+                                <option ${o.status.startsWith('Kapıda Ödeme') ? 'selected' : ''}>Kapıda Ödeme - Hazırlanıyor</option>
+                                <option ${o.status === 'Yolda' ? 'selected' : ''}>Yolda</option>
+                                <option ${o.status === 'Tamamlandı' ? 'selected' : ''}>Tamamlandı</option>
+                                <option ${o.status === 'İptal Edildi' ? 'selected' : ''}>İptal Edildi</option>
+                                <option ${o.status === 'İade Talebi' ? 'selected' : ''}>İade Talebi</option>
+                            </select>
+                        </td>
+                        <td style="vertical-align: middle;">
+                            ${actionButton}
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        // Sipariş Güncelleme Fonksiyonu (Yeni)
+        async function updateOrder(orderId) {
+            let allOrders = [];
+            allOrders = await API.getOrders();
+            
+            const orderIndex = allOrders.findIndex(o => o.orderNumber === orderId);
+            if (orderIndex === -1) return;
+
+            const order = allOrders[orderIndex];
+            const sanitizedId = orderId.replace('#', '');
+            const newStatus = document.getElementById(`status-select-${sanitizedId}`).value;
+            const newCargoProvider = document.getElementById(`cargo-select-${sanitizedId}`).value;
+            const newTrackingNumber = document.getElementById(`tracking-no-${sanitizedId}`).value.trim();
+
+            let changesMade = false;
+
+            // 1. Durum değişikliğini kontrol et
+            if (order.status !== newStatus) {
+                order.status = newStatus;
+                if (newStatus === 'Tamamlandı') {
+                    order.completionDate = new Date().toISOString();
+                }
+                changesMade = true;
+            }
+
+            // 2. Kargo bilgilerini (şirket ve takip no) kontrol et
+            // Eğer takip no girilmişse ve kargo şirketi seçilmişse
+            if (newTrackingNumber && newCargoProvider) {
+                // Eğer daha önce kargo bilgisi yoksa VEYA kargo şirketi/takip no değişmişse
+                if (!order.cargo || order.cargo.provider !== newCargoProvider || order.cargo.trackingNumber !== newTrackingNumber) {
+                    
+                    const cargoInfo = await callCargoAPI(newCargoProvider, newTrackingNumber); // Mock API çağrısı
+
+                    order.cargo = {
+                        provider: newCargoProvider,
+                        cargoName: cargoProviders[newCargoProvider].name,
+                        trackingNumber: newTrackingNumber, // Manuel girilen numarayı kullan
+                        trackingAPI: cargoProviders[newCargoProvider].api,
+                        status: cargoInfo?.status || 'Yolda',
+                        lastUpdate: cargoInfo?.lastUpdate || new Date().toLocaleString('tr-TR'),
+                        location: cargoInfo?.location || 'Dağıtım Merkezinde'
+                    };
+                    // Kargo bilgisi girildiğinde durumu otomatik "Yolda" yap
+                    order.status = 'Yolda';
+                    changesMade = true;
+                }
+            } 
+            // Eğer takip no silinmişse (boş bırakılmışsa), kargo bilgisini temizle
+            else if (!newTrackingNumber && order.cargo) {
+                delete order.cargo;
+                changesMade = true;
+            }
+
+            if (changesMade) {
+                await API.updateOrder(order);
+                renderAdminOrders(); // Tabloyu yeniden çiz
+                showToast(`Sipariş ${order.orderNumber} güncellendi.`);
+            } else {
+                showToast(`Sipariş ${order.orderNumber} için değişiklik yapılmadı.`);
+            }
+        }
+
+        // YENİ: Ödeme Onaylama Fonksiyonu
+        async function confirmPayment(orderId) {
+            if (!confirm('Bu sipariş için ödemenin alındığını onaylıyor musunuz? Sipariş durumu "Ödendi - Hazırlanıyor" olarak güncellenecektir.')) {
+                return;
+            }
+
+            let allOrders = [];
+            try {
+                if (typeof API !== 'undefined') {
+                    allOrders = await API.getOrders();
+                } else { throw new Error("API missing"); }
+            } catch (e) {
+                allOrders = JSON.parse(localStorage.getItem('que_orders')) || [];
+            }
+
+            const orderIndex = allOrders.findIndex(o => o.orderNumber === orderId);
+            if (orderIndex === -1) {
+                showToast("Hata: Sipariş bulunamadı.", 4000);
+                return;
+            }
+
+            const order = allOrders[orderIndex];
+            order.status = 'Ödendi - Hazırlanıyor';
+
+            try {
+                if (typeof API !== 'undefined') {
+                    await API.updateOrder(order);
+                } else { throw new Error("API missing"); }
+            } catch (e) {
+                localStorage.setItem('que_orders', JSON.stringify(allOrders));
+            }
+
+            showToast(`Sipariş ${order.orderNumber} ödemesi onaylandı.`);
+            renderAdminOrders();
+        }
+
+        // SİPARİŞ DETAY MODALI FONKSİYONLARI
+        async function openOrderDetails(orderId) {
+            let orders = [];
+            orders = await API.getOrders();
+            
+            const order = orders.find(o => o.orderNumber === orderId);
+            if(!order) {
+                alert("Sipariş verisi bulunamadı.");
+                return;
+            }
+
+            const content = document.getElementById('order-detail-content');
+            content.innerHTML = `
+                <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:15px; font-size:13px; color:#555;">
+                    <div style="margin-bottom:5px;"><strong>Sipariş No:</strong> ${order.orderNumber}</div>
+                    <div style="margin-bottom:5px;"><strong>Tarih:</strong> ${order.date}</div>
+                    <div><strong>Müşteri:</strong> ${order.shippingInfo ? order.shippingInfo.name : 'Bilgi Yok'}</div>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="border-bottom:2px solid #eee; text-align:left; color:#999; font-size:11px; text-transform:uppercase;">
+                            <th style="padding:10px 5px;">Ürün Adı</th>
+                            <th style="padding:10px 5px;">Adet</th>
+                            <th style="padding:10px 5px;">Birim Fiyat</th>
+                            <th style="padding:10px 5px; text-align:right;">Toplam</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${(order.items || []).map(item => `
+                            <tr style="border-bottom:1px solid #f9f9f9;">
+                                <td style="padding:12px 5px;">${item.name}</td>
+                                <td style="padding:12px 5px;">${item.quantity}</td>
+                                <td style="padding:12px 5px;">${item.price.toLocaleString('tr-TR')} TL</td>
+                                <td style="padding:12px 5px; text-align:right; font-weight:600;">${(item.price * item.quantity).toLocaleString('tr-TR')} TL</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('order-detail-modal').style.display = 'flex';
+        }
+
+        function closeOrderModal() {
+            document.getElementById('order-detail-modal').style.display = 'none';
+        }
+
+        // ADRES DETAY MODALI FONKSİYONLARI (YENİ)
+        async function openAddressDetails(orderId) {
+            let orders = [];
+            orders = await API.getOrders();
+            
+            const order = orders.find(o => o.orderNumber === orderId);
+            if (!order) return;
+
+            // Adres bilgisi yoksa boş obje ata, böylece hata vermez
+            const ship = order.shippingInfo || {};
+            
+            const content = document.getElementById('address-detail-content');
+            content.innerHTML = `
+                <ul style="list-style:none; padding:0; margin:0;">
+                    <li style="margin-bottom:12px;"><strong>Alıcı:</strong> ${ship.name || 'Bilgi Yok'}</li>
+                    <li style="margin-bottom:12px;"><strong>Telefon:</strong> ${ship.phone || 'Bilgi Yok'}</li>
+                    <li style="margin-bottom:12px;"><strong>Şehir:</strong> ${ship.city || 'Bilgi Yok'}</li>
+                    <li style="margin-bottom:12px;"><strong>Adres:</strong> ${ship.address || 'Bilgi Yok'}</li>
+                </ul>
+            `;
+            document.getElementById('address-detail-modal').style.display = 'flex';
+        }
+
+        function closeAddressModal() {
+            document.getElementById('address-detail-modal').style.display = 'none';
+        }
+
+        async function renderAdminUsers() {
+            const list = document.getElementById('admin-user-list');
+            let users = [];
+            users = await API.getUsers();
+            
+            list.innerHTML = users.map(u => `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.phone || '-'}</td></tr>`).join('');
+        }
+
+        // Başlangıçta siparişler açık
+        window.addEventListener('load', () => {
+            document.getElementById('section-siparisler').classList.remove('hidden');
+            document.querySelector('.admin-tab.active').click();
+            renderAdminOrders();
+            updateCartCount();
+        });
+
+        function handleLogout() {
+            if (confirm('Oturumu kapatmak istediğinize emin misiniz?')) {
+                sessionStorage.removeItem('isLoggedIn');
+                sessionStorage.removeItem('userRole');
+                window.location.href = 'profilim.html';
+            }
+        }
+    </script>
+</body>
+
+</html>

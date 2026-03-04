@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hesabım | Que Jewelry</title>
+    <link rel="stylesheet" href="üstpanel.css">
+    <style>
+        body {
+            background-color: #fcfcfc;
+            margin: 0;
+            padding-top: 120px;
+            font-family: 'Segoe UI', sans-serif;
+            color: #333;
+        }
+
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 50px;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+
+        h2 {
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+
+        /* Sekme Sistemi */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .tab-btn {
+            padding-bottom: 15px;
+            cursor: pointer;
+            color: #999;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: #000;
+            border-bottom: 2px solid #d4af37;
+            font-weight: 600;
+        }
+
+        /* Form Düzeni */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            text-align: left;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 8px;
+            margin-left: 15px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 15px 25px;
+            border-radius: 30px;
+            border: 1px solid #f0f0f0;
+            background: #fdfdfd;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: #d4af37;
+            background: #fff;
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.1);
+        }
+
+        .btn-gold {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn-gold:hover {
+            background: #d4af37;
+            color: #000;
+        }
+
+        .logout-link {
+            display: block;
+            margin-top: 40px;
+            color: #e74c3c;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        /* Sipariş Kartları */
+        .order-item {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+        }
+
+        .status {
+            font-size: 11px;
+            background: #eee;
+            padding: 5px 12px;
+            border-radius: 50px;
+            text-transform: uppercase;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* İADE MODAL STİLİ */
+        .return-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999;
+            display: none; align-items: center; justify-content: center;
+        }
+        .return-box {
+            background: #fff; padding: 40px; border-radius: 30px;
+            max-width: 400px; text-align: center;
+        }
+        .whatsapp-btn {
+            background: #25D366; color: #fff; border: none; padding: 12px 25px; border-radius: 50px; font-weight: bold; text-decoration: none; display: inline-block; margin: 15px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="anasayfa.html" class="nav-link">Ana Sayfa</a>
+            <a href="vitrin.html" class="nav-link">Koleksiyon</a>
+        </div>
+        <div class="nav-right">
+            <a href="begendiklerim.html" class="nav-link">❤</a>
+            <a href="javascript:void(0)" onclick="goProfile()" class="nav-link">👤</a>
+            <a href="sepetim.html" class="nav-link">🛒<span id="cart-count" class="cart-badge">0</span></a>
+        </div>
+    </nav>
+
+    <div class="profile-container">
+        <h2 id="userNameTitle">HESABIM</h2>
+
+        <div class="tabs">
+            <div class="tab-btn active" onclick="switchTab('info', this)">Kişisel Bilgiler</div>
+            <div class="tab-btn" onclick="switchTab('orders', this)">Siparişlerim</div>
+            <div class="tab-btn" onclick="switchTab('security', this)">Güvenlik</div>
+        </div>
+
+        <div id="info-section" class="tab-content">
+            <div class="info-grid">
+
+                <div class="input-group">
+                    <label>AD SOYAD</label>
+                    <input type="text" id="p-name">
+                </div>
+                <div class="input-group">
+                    <label>TELEFON NUMARASI</label>
+                    <input type="tel" id="p-phone" placeholder="05XX XXX XX XX">
+                </div>
+                <div class="input-group full-width">
+                    <label>TESLİMAT ADRESİ</label>
+                    <textarea id="p-address" rows="4" placeholder="Adresinizi detaylıca yazınız..."></textarea>
+                </div>
+            </div>
+            <button class="btn-gold" onclick="saveInfo()">DEĞİŞİKLİKLERİ KAYDET</button>
+
+            <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid #f0f0f0; text-align: center;">
+                <h4 style="margin: 0 0 10px; font-weight: 500; color: #333;">İletişim & Destek</h4>
+                <p style="color: #888; font-size: 13px; margin-bottom: 15px;">Her türlü soru ve görüşünüz için bize WhatsApp üzerinden ulaşabilirsiniz.</p>
+                <a id="profile-whatsapp-link" href="https://wa.me/905421031368" target="_blank" style="display: inline-flex; align-items: center; gap: 10px; background: #25D366; color: #fff; padding: 12px 25px; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                    <i class="fab fa-whatsapp"></i> <span id="profile-whatsapp-text">+90 542 103 13 68</span>  
+                </a>
+            </div>
+        </div>
+
+        <div id="orders-section" class="tab-content hidden">
+            <p style="text-align: center; color: #999; margin-top: 20px;">Spirarişiniz bulunmamaktadır
+        </div>
+
+        <div id="security-section" class="tab-content hidden">
+            <h3 style="text-align:left; font-weight: 400; margin-bottom: 30px; font-size: 16px; color: #333;">Şifre Değiştir</h3>
+            <div class="info-grid">
+                <div class="input-group full-width">
+                    <label>MEVCUT ŞİFRENİZ</label>
+                    <input type="password" id="p-current-pass" placeholder="Mevcut şifrenizi girin">
+                </div>
+                <div class="input-group">
+                    <label>YENİ ŞİFRE</label>
+                    <input type="password" id="p-new-pass" placeholder="Yeni şifreniz">
+                </div>
+                <div class="input-group">
+                    <label>YENİ ŞİFRE (TEKRAR)</label>
+                    <input type="password" id="p-new-pass-confirm" placeholder="Yeni şifrenizi onaylayın">
+                </div>
+            </div>
+            <button class="btn-gold" onclick="changePassword()">ŞİFREYİ GÜNCELLE</button>
+        </div>
+
+
+        <a class="logout-link" onclick="logout()">Oturumu Kapat ve Güvenli Çıkış Yap</a>
+    </div>
+
+    <!-- İADE BİLGİLENDİRME MODALI -->
+    <div id="return-modal" class="return-modal">
+        <div class="return-box">
+            <h3 style="margin-top:0;">İADE TALEBİ OLUŞTUR</h3>
+            <p style="color:#666; font-size:14px; line-height:1.6;">
+                İade işlemleri için lütfen WhatsApp hattımız üzerinden ürünün fotoğrafı ve iade nedeni ile birlikte bizimle iletişime geçiniz.
+            </p>
+            <a href="https://wa.me/905421031368" target="_blank" class="whatsapp-btn"><i class="fab fa-whatsapp"></i> +90 542 103 13 68</a>
+            <p style="font-size:12px; color:#999;">WhatsApp üzerinden iletişime geçtikten sonra aşağıdaki butona basarak talebinizi sisteme işleyiniz.</p>
+            <button class="btn-gold" onclick="confirmReturnProcess()">İLETİŞİME GEÇTİM, TALEBİ OLUŞTUR</button>
+            <button onclick="closeReturnModal()" style="background:none; border:none; color:#999; margin-top:15px; cursor:pointer; text-decoration:underline;">Vazgeç</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // GÜVENLİK KONTROLÜ: Giriş yapmayan bu sayfayı göremez
+        // Sayfa yüklendiğinde eğer URL'de ?tab=orders varsa o sekmeyi aç
+        window.onload = () => {
+            // GÜVENLİK KONTROLÜ
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            if (isLoggedIn !== 'true') {
+                window.location.href = 'profilim.html';
+                return;
+            }
+
+            // VERİLERİ YÜKLE
+            const name = sessionStorage.getItem('currentUser');
+            document.getElementById('userNameTitle').innerText = name.toUpperCase();
+
+            document.getElementById('p-name').value = name;
+            document.getElementById('p-phone').value = sessionStorage.getItem('userPhone') || "";
+            document.getElementById('p-address').value = sessionStorage.getItem('userAddress') || "";
+
+            // SİPARİŞLERİ RENDER ET
+            renderOrders();
+
+            // URL'den gelen sekmeyi aç
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tab') === 'orders') {
+                const ordersTabButton = document.querySelector('.tab-btn[onclick*="orders"]');
+                if (ordersTabButton) {
+                    switchTab('orders', ordersTabButton);
+                }
+            }
+        };
+        function switchTab(target, el) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(target + '-section').classList.remove('hidden');
+            el.classList.add('active');
+        }
+
+        function saveInfo() {
+            sessionStorage.setItem('userPhone', document.getElementById('p-phone').value);
+            sessionStorage.setItem('userAddress', document.getElementById('p-address').value);
+            alert("Bilgileriniz başarıyla güncellendi ✨");
+        }
+
+        function logout() {
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('userRole');
+            sessionStorage.removeItem('currentUser');
+            sessionStorage.removeItem('currentUserEmail');
+            // Sayfayı anasayfaya yönlendir, navbar kendini otomatik "Giriş Yap"a çekecek
+            window.location.href = 'anasayfa.html';
+        }
+
+        let currentReturnOrderId = null;
+
+        async function renderOrders() {
+            const ordersContainer = document.getElementById('orders-section'); // HTML'deki sipariş alanı ID'si
+            let allOrders = [];
+            allOrders = await API.getOrders();
+            
+            const currentUserEmail = sessionStorage.getItem('currentUserEmail');
+            const whatsappNumber = localStorage.getItem('que_whatsapp_number');
+
+            // Sadece mevcut kullanıcıya ait siparişleri filtrele
+            const userOrders = allOrders.filter(order => order.userEmail === currentUserEmail);
+
+            let htmlContent = '';
+
+            const whatsappNumberForLink = "905421031368";
+            const whatsappNumberForDisplay = "+90 542 103 13 68";
+
+            // WhatsApp Bilgi Kutusu (Sipariş listesinin başında)
+            if (whatsappNumberForDisplay) {
+                htmlContent += `
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 15px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; text-align: left;">
+                        <div>
+                            <h4 style="margin:0; color: #166534; font-size: 15px; display:flex; align-items:center; gap:8px;"><i class="fab fa-whatsapp"></i> Müşteri Destek Hattı</h4>
+                            <p style="margin:5px 0 0; font-size: 13px; color: #15803d;">Siparişlerinizle ilgili sorularınız için: <strong>${whatsappNumberForDisplay}</strong></p>
+                        </div>
+                        <a href="https://wa.me/${whatsappNumberForLink}" target="_blank" style="background: #25D366; color: white; padding: 10px 20px; border-radius: 30px; text-decoration: none; font-size: 13px; font-weight:bold;">Mesaj Gönder</a>
+                    </div>
+                `;
+            }
+            
+            // Duruma göre renk belirleme
+            const getStatusColor = (status) => {
+                if (status === 'Hazırlanıyor') return '#f39c12'; // Turuncu
+                if (status === 'Yolda' || status === 'Kargoda') return '#3498db'; // Mavi
+                if (status === 'Tamamlandı' || status === 'Teslim Edildi') return '#27ae60'; // Yeşil
+                if (status === 'İptal Edildi') return '#e74c3c'; // Kırmızı
+                if (status === 'İade Talebi') return '#9b59b6'; // Mor
+                return '#999';
+            };
+
+            // Siparişleri sondan başa (en yeni en üstte) listele
+            htmlContent += userOrders.reverse().map(order => {
+                let actionButton = '';
+                
+                // İPTAL SENARYOSU: Henüz kargoya verilmediyse
+                if (['Hazırlanıyor', 'Ödendi - Hazırlanıyor', 'Havale Bekleniyor', 'Kapıda Ödeme - Hazırlanıyor', 'Onaylandı'].includes(order.status)) {
+                    actionButton = `<button onclick="cancelOrder('${order.id}')" style="background: #fff; border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">SİPARİŞİ İPTAL ET</button>`;
+                }
+                
+                // İADE SENARYOSU: Kargoya verildiyse veya tamamlandıysa
+                else if (['Yolda', 'Tamamlandı', 'Teslim Edildi'].includes(order.status)) {
+                    actionButton = `<button onclick="openReturnModal('${order.id}')" style="background: #fff; border: 1px solid #333; color: #333; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">İADE ET</button>`;
+                }
+
+                // İADE TALEBİ ALINDI BİLGİSİ
+                else if (order.status === 'İade Talebi') {
+                    actionButton = `<div style="margin-top:10px; font-size:12px; color:#9b59b6; font-weight:600;"><i class="fas fa-clock"></i> İade talebiniz inceleniyor...</div>`;
+                }
+
+                return `
+        <div class="order-item" style="border: 1px solid #eee; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="text-align: left;">
+                <span style="color: #aaa; font-size: 11px; letter-spacing:1px;">SİPARİŞ NO: ${order.id}</span>
+                <div style="font-weight: 500; margin-top: 5px;">${order.items.map(item => item.name).join(', ')}</div>
+                <small style="color: #999;">${order.date}</small>
+            </div>
+            <div style="text-align: right;">
+                <div class="status" style="font-size: 11px; background: ${getStatusColor(order.status)}20; color: ${getStatusColor(order.status)}; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-bottom: 5px; font-weight:600;">
+                    ${order.status}
+                </div>
+                <div style="font-size: 16px; font-weight: 700;">${order.total.toLocaleString('tr-TR')} TL</div>
+                ${order.cargo && order.cargo.trackingNumber ? `<div style="font-size:10px; color:#666; margin-top:4px;">Takip: ${order.cargo.trackingNumber}</div>` : ''}
+                ${actionButton}
+            </div>
+        </div>
+    `}).join('');
+
+            ordersContainer.innerHTML = htmlContent;
+        }
+
+        // SİPARİŞ İPTAL FONKSİYONU
+        async function cancelOrder(orderId) {
+            if(confirm('Siparişinizi iptal etmek istediğinize emin misiniz?')) {
+                let allOrders = await API.getOrders();
+                const order = allOrders.find(o => o.id === orderId);
+                
+                if (order) {
+                    order.status = 'İptal Edildi';
+                    await API.updateOrder(order);
+                    renderOrders();
+                    alert('Siparişiniz iptal edilmiştir.');
+                }
+            }
+        }
+
+        // İADE FONKSİYONLARI
+        function openReturnModal(orderId) {
+            currentReturnOrderId = orderId;
+            document.getElementById('return-modal').style.display = 'flex';
+        }
+
+        function closeReturnModal() {
+            document.getElementById('return-modal').style.display = 'none';
+            currentReturnOrderId = null;
+        }
+
+        async function confirmReturnProcess() {
+            if (!currentReturnOrderId) return;
+
+            let allOrders = await API.getOrders();
+            const order = allOrders.find(o => o.id === currentReturnOrderId);
+            
+            if (order) {
+                order.status = 'İade Talebi';
+                await API.updateOrder(order);
+                renderOrders();
+                closeReturnModal();
+                alert('İade talebiniz alınmıştır. Ekibimiz en kısa sürede dönüş yapacaktır.');
+            }
+        }
+
+        async function changePassword() {
+            const currentPass = document.getElementById('p-current-pass').value;
+            const newPass = document.getElementById('p-new-pass').value;
+            const newPassConfirm = document.getElementById('p-new-pass-confirm').value;
+            const email = sessionStorage.getItem('currentUserEmail');
+
+            if (!currentPass || !newPass || !newPassConfirm) {
+                alert("Lütfen tüm alanları doldurun.");
+                return;
+            }
+            if (newPass !== newPassConfirm) {
+                alert("Yeni şifreler eşleşmiyor.");
+                return;
+            }
+
+            try {
+                await API.changePassword({ email, currentPass, newPass });
+                alert("Şifreniz başarıyla güncellendi.");
+                document.getElementById('p-current-pass').value = '';
+                document.getElementById('p-new-pass').value = '';
+                document.getElementById('p-new-pass-confirm').value = '';
+            } catch (error) {
+                alert("Hata: " + error.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

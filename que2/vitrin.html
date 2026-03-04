@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koleksiyon | Que Jewelry</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="üstpanel.css">
+    <link rel="stylesheet" href="vitrin.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="anasayfa.html" class="nav-link">Ana Sayfa</a>
+            <a href="vitrin.html" class="nav-link active">Koleksiyon</a>
+        </div>
+        <div class="nav-right">
+            <a href="begendiklerim.html" class="nav-link">❤</a>
+            <a href="javascript:void(0)" onclick="goProfile()" class="nav-link">👤</a>
+            <a href="sepetim.html" class="nav-link">
+                🛒<span id="cart-count" class="cart-badge">0</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        
+        <main class="product-area">
+            <div id="admin-edit-bar" class="admin-control-header hidden">
+                <span>🔐 YÖNETİCİ MODU AKTİF</span>
+                <div class="admin-controls">
+                    <button id="toggle-edit-btn" onclick="toggleEditMode()" class="edit-mode-btn">
+                        <i class="fas fa-edit"></i> DÜZENLE MODUNU AÇ
+                    </button>
+                    <button onclick="openAddProductModal()" class="add-product-btn">
+                        <i class="fas fa-plus"></i> ÜRÜN EKLE
+                    </button>
+                </div>
+            </div>
+
+            <div id="product-list" class="product-grid">
+                </div>
+        </main>
+
+        <aside class="filter-sidebar">
+            <div id="admin-only-tools" class="admin-box hidden">
+                <button class="admin-btn-sort" onclick="toggleEditMode()">
+                    <i class="fas fa-sort"></i> Sıralamayı Düzenle
+                </button>
+            </div>
+
+            <div class="filter-group">
+                <h4>Sıralama</h4>
+                <select id="sortPrice" onchange="filterProducts()" class="filter-select">
+                    <option value="default">Önerilen</option>
+                    <option value="low">Fiyat: Düşükten Yükseğe</option>
+                    <option value="high">Fiyat: Yüksekten Düşüğe</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <h4>Kategoriler</h4>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" class="cat-filter" value="Küpe" onchange="filterProducts()"> Küpeler</label>
+                    <label><input type="checkbox" class="cat-filter" value="Kolye" onchange="filterProducts()"> Kolyeler</label>
+                    <label><input type="checkbox" class="cat-filter" value="Bilezik" onchange="filterProducts()"> Bilezikler</label>
+                    <label><input type="checkbox" class="cat-filter" value="Yüzük" onchange="filterProducts()"> Yüzükler</label>
+                    <label><input type="checkbox" class="cat-filter" value="Diğer" onchange="filterProducts()"> Diğerleri</label>
+                </div>
+            </div>
+        </aside>
+
+    </div> <div id="edit-overlay" class="edit-panel-overlay">
+        <div class="edit-panel">
+            <div class="edit-panel-header">
+                <h3><i class="fas fa-magic"></i> Ürünü Düzenle</h3>
+                <button class="edit-close-btn" onclick="closeEditPanel()" title="Kapat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="edit-panel-content">
+                <!-- FOTOĞRAF YÜKLEME -->
+                <div class="upload-zone" id="drop-zone">
+                    <i class="fas fa-images"></i>
+                    <p>Fotoğrafları Sürükleyin (En Fazla 5)</p>
+                    <div id="image-previews" class="preview-grid"></div>
+                </div>
+
+                <!-- GIZLI ÜRÜN ID -->
+                <input type="hidden" id="edit-id">
+
+                <!-- FORM ALANILARI -->
+                <div class="edit-form-row full">
+                    <label class="edit-input-label">Ürün Adı</label>
+                    <input type="text" id="edit-name" class="edit-input" placeholder="Örn: Pırlanta Yüzük">
+                </div>
+
+                <div class="edit-form-row">
+                    <div>
+                        <label class="edit-input-label">Kategori</label>
+                        <select id="edit-category" class="edit-select">
+                            <option value="" disabled selected>Kategori Seçin</option>
+                            <option value="Küpe">Küpeler</option>
+                            <option value="Kolye">Kolyeler</option>
+                            <option value="Bilezik">Bilezikler</option>
+                            <option value="Yüzük">Yüzükler</option>
+                            <option value="Diğer">Diğerleri</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="edit-input-label">Fiyat (TL)</label>
+                        <input type="number" id="edit-price" class="edit-input" placeholder="15.000">
+                    </div>
+                </div>
+
+                <div class="edit-form-row full">
+                    <label class="edit-input-label">Ürün Açıklaması</label>
+                    <textarea id="edit-desc" class="edit-input" style="height:100px; resize:vertical;" placeholder="Ürün hikayesi ve özellikleri..."></textarea>
+                </div>
+
+                <!-- BUTONLAR -->
+                <div class="edit-btns">
+                    <button onclick="saveProductUpdate()" class="btn-update">
+                        <i class="fas fa-save"></i> KAYDET
+                    </button>
+                    <button onclick="closeEditPanel()" class="btn-cancel">
+                        <i class="fas fa-times"></i> İPTAL
+                    </button>
+                    <button onclick="deleteProduct()" class="btn-delete">
+                        <i class="fas fa-trash-alt"></i> ÜRÜNÜ SİL
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ÜRÜN EKLEME MODAL -->
+    <div id="add-product-overlay" class="edit-panel-overlay" style="display: none;">
+        <div class="edit-panel">
+            <div class="edit-panel-header">
+                <h3><i class="fas fa-plus-circle"></i> Yeni Ürün Ekle</h3>
+                <button class="edit-close-btn" onclick="closeAddProductModal()" title="Kapat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="edit-panel-content">
+                <!-- FOTOĞRAF YÜKLEME -->
+                <div class="upload-zone" id="drop-zone-add">
+                    <i class="fas fa-images"></i>
+                    <p>Fotoğrafları Sürükleyin (En Fazla 5)</p>
+                    <div id="image-previews-add" class="preview-grid"></div>
+                </div>
+
+                <!-- FORM ALANILARI -->
+                <div class="edit-form-row full">
+                    <label class="edit-input-label">Ürün Adı</label>
+                    <input type="text" id="add-name" class="edit-input" placeholder="Örn: Pırlanta Yüzük">
+                </div>
+
+                <div class="edit-form-row">
+                    <div>
+                        <label class="edit-input-label">Kategori</label>
+                        <select id="add-category" class="edit-select">
+                            <option value="" disabled selected>Kategori Seçin</option>
+                            <option value="Küpe">Küpeler</option>
+                            <option value="Kolye">Kolyeler</option>
+                            <option value="Bilezik">Bilezikler</option>
+                            <option value="Yüzük">Yüzükler</option>
+                            <option value="Diğer">Diğerleri</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="edit-input-label">Fiyat (TL)</label>
+                        <input type="number" id="add-price" class="edit-input" placeholder="15.000">
+                    </div>
+                </div>
+
+                <div class="edit-form-row full">
+                    <label class="edit-input-label">Ürün Açıklaması</label>
+                    <textarea id="add-desc" class="edit-input" style="height:100px; resize:vertical;" placeholder="Ürün hikayesi ve özellikleri..."></textarea>
+                </div>
+
+                <!-- BUTONLAR -->
+                <div class="edit-btns">
+                    <button onclick="saveNewProduct()" class="btn-update">
+                        <i class="fas fa-plus"></i> ÜRÜN EKLE
+                    </button>
+                    <button onclick="closeAddProductModal()" class="btn-cancel">
+                        <i class="fas fa-times"></i> İPTAL
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="detail-overlay" class="detail-overlay">
+    <div class="detail-modal" id="detail-content"></div>
+</div>
+
+
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+    <script src="vitrin.js"></script>
+</body>
+</html>

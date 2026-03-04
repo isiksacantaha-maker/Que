@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Güvenli Ödeme | Que Jewelry</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="üstpanel.css">
+
+    <style>
+        body {
+            background-color: #f8f8f8;
+            margin: 0;
+            padding-top: 120px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .checkout-wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+        }
+
+        .checkout-section {
+            background: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Step Göstergesi */
+        .step-indicator {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        h3 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 16px;
+        }
+
+        .step.active {
+            color: #27ae60;
+        }
+
+        .step-divider {
+            width: 30px;
+            height: 2px;
+            background: #eee;
+            margin: 0 -5px;
+        }
+
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: #999;
+        }
+
+        .step.active .step-circle {
+            background: #27ae60;
+            color: #fff;
+        }
+
+        /* Step Sections */
+        .step-section {
+            display: none;
+        }
+
+        .step-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Form Düzeni */
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            font-family: inherit;
+            outline: none;
+            transition: 0.3s;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            border-color: #d4af37;
+            background: #fff;
+        }
+
+        /* Ödeme Paneli Detayları */
+        .payment-provider-box {
+            background: #fff;
+            border: 2px solid #0056b3;
+            border-radius: 15px;
+            padding: 25px;
+        }
+
+        .masterpass-badge {
+            height: 20px;
+            margin-bottom: 20px;
+        }
+
+        .total-pay {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin: 25px 0;
+            color: #000;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .next-btn, .pay-btn, .back-btn {
+            flex: 1;
+            padding: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border: none;
+            transition: 0.3s;
+        }
+
+        .next-btn {
+            background: #27ae60;
+            color: #fff;
+            width: 100%;
+        }
+
+        .next-btn:hover {
+            background: #219150;
+            transform: translateY(-2px);
+        }
+
+        .back-btn {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .back-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .pay-btn {
+            background: #27ae60;
+            color: #fff;
+            width: 100%;
+        }
+
+        .pay-btn:hover {
+            background: #219150;
+            transform: translateY(-2px);
+        }
+
+        /* WHATSAPP MODAL */
+        .whatsapp-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999;
+            display: none; align-items: center; justify-content: center;
+        }
+        .whatsapp-box {
+            background: #fff; padding: 40px; border-radius: 30px;
+            max-width: 450px; text-align: center; color: #333;
+        }
+        .whatsapp-btn {
+            background: #25D366; color: #fff; border: none; padding: 12px 25px; border-radius: 50px; font-weight: bold; text-decoration: none; display: inline-block; margin: 15px 0;
+        }
+
+        @media (max-width: 850px) {
+            .checkout-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="anasayfa.html" class="nav-link">Ana Sayfa</a>
+            <a href="vitrin.html" class="nav-link">Koleksiyon</a>
+        </div>
+        <div class="nav-right">
+            <a href="begendiklerim.html" class="nav-link">❤</a>
+            <a href="javascript:void(0)" onclick="goProfile()" class="nav-link" id="nav-profile-icon">👤</a>
+            <a href="sepetim.html" class="nav-link">🛒<span id="cart-count" class="cart-badge">0</span></a>
+        </div>
+    </nav>
+
+    <!-- WHATSAPP BİLGİLENDİRME MODALI -->
+    <div id="whatsapp-modal" class="whatsapp-modal">
+        <div class="whatsapp-box">
+            <h3 style="margin-top:0;">SİPARİŞİNİZ ALINDI!</h3>
+            <p style="color:#666; font-size:14px; line-height:1.6;">
+                Siparişinizin onaylanması için lütfen ödeme dekontunu aşağıdaki WhatsApp hattımıza gönderiniz.
+            </p>
+            <a id="whatsapp-link" href="#" target="_blank" class="whatsapp-btn"><i class="fab fa-whatsapp"></i> <span id="whatsapp-number-text"></span></a>
+            <p style="font-size:12px; color:#999;">Dekontu gönderdikten sonra siparişiniz hazırlanmaya başlayacaktır.</p>
+            <button class="pay-btn" style="background:#333;" onclick="redirectToProfile()">SİPARİŞLERİM'E GİT</button>
+        </div>
+    </div>
+
+    <div class="checkout-wrapper">
+
+        <!-- Step Göstergesi -->
+        <div style="grid-column: span 2;">
+            <div class="step-indicator">
+                <div class="step active" id="step1-indicator">
+                    <div class="step-circle">1</div>
+                    <span>Adres Bilgisi</span>
+                </div>
+                <div class="step-divider"></div>
+                <div class="step" id="step2-indicator">
+                    <div class="step-circle">2</div>
+                    <span>Ödeme Bilgisi</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 1: Adres Bilgisi -->
+        <div id="step1" class="step-section active">
+            <div class="checkout-section">
+                <h3>Teslimat Adresi</h3>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>ADINIZ</label>
+                        <input type="text" id="ship-name" placeholder="Ad">
+                    </div>
+                    <div class="input-group">
+                        <label>SOYADINIZ</label>
+                        <input type="text" id="ship-surname" placeholder="Soyad">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>TELEFON NUMARASI</label>
+                    <input type="tel" id="ship-phone" placeholder="05XX XXX XX XX">
+                </div>
+
+                <div class="input-group">
+                    <label>TAM ADRES</label>
+                    <input type="text" id="ship-address" placeholder="Mahalle, Sokak, No...">
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>ŞEHİR</label>
+                        <input type="text" id="ship-city" placeholder="Şehrinizi yazınız">
+                    </div>
+                    <div class="input-group">
+                        <label>POSTA KODU</label>
+                        <input type="text" id="ship-zip" placeholder="34000">
+                    </div>
+                </div>
+
+                <button class="next-btn" onclick="nextStep()">ÖDEME BİLGİLERİNE DEVAM ET →</button>
+            </div>
+        </div>
+
+        <!-- STEP 2: Kredi Kartı -->
+        <div id="step2" class="step-section" style="grid-column: span 2;">
+            <div class="checkout-section">
+                <h3>Ödeme Yöntemi</h3>
+
+                <!-- Banka Havalesi Bilgisi -->
+                <div id="bank-transfer-info" style="padding: 20px; background: #ffffff; border-radius: 10px;">
+    <h4 style="color: #000000;">Banka Hesap Bilgilerimiz</h4>
+    
+    <p style="font-size: 13px; color: #666;">Lütfen aşağıdaki hesaba havale/EFT yaparken açıklama kısmına sipariş numaranızı yazmayı unutmayın. Siparişiniz, ödeme onaylandıktan sonra kargoya verilecektir.</p>
+    
+    <ul style="list-style: none; padding: 0; font-size: 14px; color: #000000;">
+        <li><strong>Banka:</strong> Que Bankası A.Ş.</li>
+        <li><strong>Alıcı:</strong> QUE JEWELRY SAN. TİC. LTD. ŞTİ.</li>
+        <li><strong>IBAN:</strong> TR00 0000 0000 0000 0000 0000 00</li>
+    </ul>
+</div>
+
+                <div class="total-pay" id="checkout-total">0 TL</div>
+
+                <div class="button-row">
+                    <button class="back-btn" onclick="backStep()">← GERİ DÖN</button>
+                    <button class="pay-btn" onclick="processPayment()">SİPARİŞİ TAMAMLA</button>
+                </div>
+
+                <p style="text-align: center; font-size: 10px; color: #aaa; margin-top: 15px;">
+                    <i class="fas fa-lock"></i> Bilgileriniz güvence altındadır.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+    <script>
+        let currentStep = 1;
+
+        function nextStep() {
+            if (saveShippingInfo()) {
+                currentStep = 2;
+                updateStepDisplay();
+                updateCheckoutTotal();
+            }
+        }
+
+        function backStep() {
+            currentStep = 1;
+            updateStepDisplay();
+        }
+
+        function updateStepDisplay() {
+            // Adım bildirgesini güncelle
+            const step1Indicator = document.getElementById('step1-indicator');
+            const step2Indicator = document.getElementById('step2-indicator');
+            
+            if (currentStep === 1) {
+                step1Indicator.classList.add('active');
+                step2Indicator.classList.remove('active');
+            } else {
+                step1Indicator.classList.remove('active');
+                step2Indicator.classList.add('active');
+            }
+
+            // Bölümleri göster/gizle
+            document.getElementById('step1').style.display = 'none';
+            document.getElementById('step2').style.display = 'none';
+            
+            if (currentStep === 1) {
+                document.getElementById('step1').style.display = 'block';
+            } else {
+                document.getElementById('step2').style.display = 'block';
+            }
+        }
+
+        function redirectToProfile() {
+            window.location.href = 'girissonrasıprofilim.html?tab=orders';
+        }
+
+        function updateCheckoutTotal() {
+            const cart = JSON.parse(sessionStorage.getItem('que_cart')) || [];
+            const allProducts = JSON.parse(localStorage.getItem('que_products')) || [];
+            let total = 0;
+
+            cart.forEach(cartItem => {
+                const product = allProducts.find(p => Number(p.id) === Number(cartItem.id));
+                if (product) {
+                    total += product.price * (cartItem.quantity || 1);
+                }
+            });
+
+            document.getElementById('checkout-total').innerText = total.toLocaleString('tr-TR') + " TL";
+        }
+
+        window.onload = () => {
+            const cart = JSON.parse(sessionStorage.getItem('que_cart')) || [];
+            
+            // Sepet boşsa uyar
+            if (cart.length === 0) {
+                alert('Sepetiniz boş. Lütfen ürün ekleyiniz.');
+                window.location.href = 'vitrin.html';
+                return;
+            }
+
+            // Giriş kontrolü
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            const userEmail = sessionStorage.getItem('currentUserEmail');
+            if (!isLoggedIn || !userEmail) {
+                alert('Ödeme yapabilmek için lütfen giriş yapınız.');
+                window.location.href = 'profilim.html';
+                return;
+            }
+
+            updateCheckoutTotal();
+            updateCartCount();
+            
+            // Önceki adres bilgilerini yükle
+            loadShippingInfo();
+
+            // Giriş yapmışsa ad/soyad doldur
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                const currentUser = sessionStorage.getItem('currentUser') || '';
+                const nameParts = currentUser.split(' ');
+                if (document.getElementById('ship-name') && !document.getElementById('ship-name').value) 
+                    document.getElementById('ship-name').value = nameParts[0] || '';
+                if (document.getElementById('ship-surname') && !document.getElementById('ship-surname').value) 
+                    document.getElementById('ship-surname').value = nameParts[1] || '';
+            }
+
+            // Başlangıçta sadece step 1 görünsün
+            updateStepDisplay();
+        };
+    </script>
+</body>
+
+</html>

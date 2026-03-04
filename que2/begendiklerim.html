@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beğendiklerim | Que Jewelry</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="üstpanel.css">
+
+    <style>
+        body {
+            background-color: #fcfcfc;
+            margin: 0;
+            padding-top: 120px;
+            /* Navbar altında kalmaması için */
+            font-family: 'Segoe UI', sans-serif;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 50px;
+        }
+
+        /* Boş Durum Tasarımı */
+        #empty-message {
+            margin-top: 80px;
+            display: none;
+        }
+
+        #empty-message .icon {
+            font-size: 50px;
+            color: #eee;
+            margin-bottom: 20px;
+        }
+
+        #empty-message p {
+            color: #999;
+            font-size: 15px;
+            letter-spacing: 1px;
+        }
+
+        .discover-btn {
+            display: inline-block;
+            margin-top: 25px;
+            color: #000;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+            transition: 0.3s;
+        }
+
+        .discover-btn:hover {
+            color: #d4af37;
+            border-color: #d4af37;
+        }
+
+        /* Ürün Izgarası */
+        .wishlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 35px;
+        }
+
+        /* Ürün Kartı Stili (Vitrin ile benzer) */
+        .product-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 15px;
+            border: 1px solid #f0f0f0;
+            position: relative;
+            transition: 0.4s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+        }
+
+        .img-box {
+            height: 380px;
+            overflow: hidden;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+        }
+
+        .img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .remove-heart {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            background: #fff;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            font-size: 18px;
+            color: #d4af37;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .product-info h4 {
+            margin: 10px 0 5px;
+            font-weight: 400;
+            font-size: 16px;
+        }
+
+        .product-info .price {
+            font-weight: 700;
+            color: #000;
+            font-size: 17px;
+        }
+
+        .add-to-cart-small {
+            width: 100%;
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 12px;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+
+        .add-to-cart-small:hover {
+            background: #d4af37;
+            color: #000;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="anasayfa.html" class="nav-link">Ana Sayfa</a>
+            <a href="vitrin.html" class="nav-link">Koleksiyon</a>
+        </div>
+        </div>
+        <div class="nav-right">
+            <a href="begendiklerim.html" class="nav-link">❤</a>
+            <a href="javascript:void(0)" onclick="goProfile()" class="nav-link" id="nav-profile-icon">👤</a>
+            <a href="sepetim.html" class="nav-link">🛒<span id="cart-count" class="cart-badge">0</span></a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Beğendiklerim</h2>
+
+        <div id="wishlist-list" class="wishlist-grid"></div>
+
+        <div id="empty-message">
+            <div class="icon">❤</div>
+            <p>Henüz beğendiğiniz bir ürün bulunmamaktadır.</p>
+            <a href="vitrin.html" class="discover-btn">Koleksiyonu Keşfet →</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Sayfa yüklendiğinde favorileri getir
+        window.onload = () => {
+            renderWishlist();
+            if (typeof updateCartUI === "function") updateCartUI();
+        }
+    </script>
+</body>
+
+</html>

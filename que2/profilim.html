@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profilim | Que Jewelry</title>
+    <link rel="stylesheet" href="üstpanel.css">
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <style>
+        body {
+            background-color: #fcfcfc;
+            margin: 0;
+            padding-top: 120px;
+            font-family: 'Segoe UI', sans-serif;
+            color: #333;
+        }
+
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .auth-container h2 {
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 5px;
+            margin-left: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 25px;
+            border: 1px solid #eee;
+            background: #f9f9f9;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #d4af37;
+            background: #fff;
+        }
+
+        .btn-black {
+            width: 100%;
+            padding: 15px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+
+        .btn-black:hover {
+            background: #d4af37;
+            color: #000;
+        }
+
+        .switch-text {
+            font-size: 13px;
+            color: #888;
+            margin-top: 25px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .success-box {
+            color: #27ae60;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="anasayfa.html" class="nav-link">Ana Sayfa</a>
+            <a href="vitrin.html" class="nav-link">Koleksiyon</a>
+        </div>
+        <div class="nav-right">
+            <a href="begendiklerim.html" class="nav-link">❤</a>
+            <a href="javascript:void(0)" onclick="goProfile()" class="nav-link">👤</a>
+            <a href="sepetim.html" class="nav-link">🛒<span id="cart-count" class="cart-badge">0</span></a>
+        </div>
+    </nav>
+
+    <div id="login-view" class="auth-container">
+        <h2>Giriş Yap</h2>
+        <div class="input-group">
+            <label>E-POSTA</label>
+            <input type="email" id="login-email" placeholder="mail@que.com">
+        </div>
+        <div class="input-group">
+            <label>ŞİFRE</label>
+            <input type="password" id="login-pass" placeholder="••••••••">
+        </div>
+        <button type="button" class="btn-black" onclick="handleLogin()">GİRİŞ YAP</button>
+        <div class="switch-text" onclick="showView('register-view')">Hesabınız yok mu? Kayıt Olun</div>
+        <div class="switch-text" style="margin-top: 10px; color: #aaa;" onclick="showView('forgot-view')">Şifremi Unuttum?</div>
+    </div>
+
+    <div id="register-view" class="auth-container hidden">
+        <h2>Kayıt Ol</h2>
+        <div class="input-group">
+            <label>İSİM SOYAD</label>
+            <input type="text" id="reg-name" placeholder="Adınız">
+        </div>
+        <div class="input-group">
+            <label>E-POSTA</label>
+            <input type="email" id="reg-email" placeholder="mail@que.com">
+        </div>
+        <div class="input-group">
+            <label>ŞİFRE</label>
+            <input type="password" id="reg-pass" placeholder="Şifreniz">
+        </div>
+        <div class="input-group">
+            <label>ŞİFRE TEKRAR</label>
+            <input type="password" id="reg-pass-confirm" placeholder="Şifrenizi onaylayın">
+        </div>
+        <button class="btn-black" onclick="stepRegister()">KAYIT OL</button>
+        <div class="switch-text" onclick="showView('login-view')">Zaten üye misiniz? Giriş Yapın</div>
+    </div>
+
+    <div id="otp-view" class="auth-container hidden">
+        <h2>ONAY KODU</h2>
+        <p style="font-size: 13px; color: #666;" id="otp-info">Mail adresinize gönderilen kodu giriniz.</p>
+        <div class="input-group">
+            <input type="text" id="otp-input" placeholder="0000"
+                style="text-align: center; font-size: 20px; letter-spacing: 5px;">
+        </div>
+        <button class="btn-black" onclick="stepVerify()">ONAYLA</button>
+    </div>
+
+    <div id="success-view" class="auth-container hidden">
+        <div style="font-size: 40px; margin-bottom: 20px;">✨</div>
+        <h2 class="success-box">KAYDINIZ BAŞARILI</h2>
+        <p style="color: #666;">Hesabınız oluşturulmuştur. Artık giriş yapabilirsiniz.</p>
+        <button class="btn-black" onclick="showView('login-view')">GİRİŞ EKRANINA DÖN</button>
+    </div>
+
+    <div id="forgot-view" class="auth-container hidden">
+        <h2>Şifremi Unuttum</h2>
+        <p style="font-size: 13px; color: #666;">Kayıtlı e-posta adresinizi girin. Yeni şifreniz mail adresinize gönderilecektir.</p>
+        <div class="input-group">
+            <label>E-POSTA</label>
+            <input type="email" id="forgot-email" placeholder="mail@que.com">
+        </div>
+        <button class="btn-black" onclick="handleForgotPassword()">YENİ ŞİFRE GÖNDER</button>
+        <div class="switch-text" onclick="showView('login-view')">Giriş ekranına dön</div>
+    </div>
+
+
+    <script src="api.js"></script>
+    <script>
+        // --- DEĞİŞKENLER VE HAVUZ ---
+        // EmailJS'i başlat
+        (function() {
+            // BURAYA KENDİ EMAILJS PUBLIC KEY'İNİZİ GİRİN
+            emailjs.init("btOzNmRVPRqmt-Rp6"); 
+        })();
+
+        let generatedOTP = "";
+        let tempUser = {};
+
+        // Görünüm Değiştirme
+        function showView(viewId) {
+            document.querySelectorAll('.auth-container').forEach(v => v.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        // 1. KAYIT OL ADIMI
+        function stepRegister() {
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const pass = document.getElementById('reg-pass').value;
+            const confirm = document.getElementById('reg-pass-confirm').value;
+
+            if (!name || !email || !pass) { alert("Lütfen tüm alanları doldurun."); return; }
+            if (pass !== confirm) { alert("Şifreler eşleşmiyor!"); return; }
+
+            // 4 haneli rastgele kod üret
+            generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+
+            // Kullanıcıyı geçici hafızaya al
+            tempUser = { name, email, pass };
+
+            // EmailJS ile e-posta gönder
+            const templateParams = {
+                to_name: name,
+                to_email: email,
+                otp_code: generatedOTP
+            };
+            
+            // BURAYA KENDİ SERVICE ID VE ONAY KODU TEMPLATE ID'NİZİ GİRİN
+            const serviceID = 'YOUR_SERVICE_ID';
+            const templateID = 'YOUR_OTP_TEMPLATE_ID';
+
+            emailjs.send(serviceID, templateID, templateParams)
+                .then(function(response) {
+                   console.log('Onay kodu e-postası gönderildi!', response.status, response.text);
+                   alert('Onay kodu ' + email + ' adresine gönderildi.');
+                   showView('otp-view');
+                }, function(error) {
+                   console.log('E-posta gönderilemedi...', error);
+                   alert('Onay kodu gönderilirken bir hata oluştu. Lütfen tekrar deneyin veya bilgilerinizi kontrol edin.');
+                });
+        }
+
+        // 2. ONAY KODU DOĞRULAMA VE KALICI KAYIT
+        async function stepVerify() {
+            const userCode = document.getElementById('otp-input').value;
+
+            if (userCode === generatedOTP) {
+                try {
+                    await API.register(tempUser);
+                    showView('success-view');
+                } catch (error) {
+                    alert("Kayıt hatası: " + error.message);
+                    showView('register-view');
+                }
+            } else {
+                alert("Hatalı onay kodu! Lütfen tekrar deneyin.");
+            }
+        }
+
+        // 3. GİRİŞ YAPMA (HAVUZDAN KONTROL)
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+
+            // Admin Girişi (Özel Tanımlı)
+            if (email === "oya.gugu@gmail.com" && pass === "oya13gugu") {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('userRole', 'admin');
+                sessionStorage.setItem('currentUser', 'Yönetici');
+                sessionStorage.setItem('currentUserEmail', email);
+                alert("Hoş geldiniz, Yönetici.");
+                window.location.href = "adminekrani.html";
+                return;
+            }
+
+            try {
+                const userData = await API.login({ email, pass });
+                
+                sessionStorage.setItem('isLoggedIn', 'true'); // Giriş durumunu işaretle
+                sessionStorage.setItem('userRole', userData.role);
+                sessionStorage.setItem('currentUser', userData.name);
+                sessionStorage.setItem('currentUserEmail', userData.email);
+                if (userData.phone) sessionStorage.setItem('userPhone', userData.phone);
+                if (userData.address) sessionStorage.setItem('userAddress', userData.address);
+
+                alert("Hoş geldiniz, " + userData.name);
+
+                if (userData.role === 'admin') {
+                    window.location.href = "adminekrani.html";
+                } else {
+                    window.location.href = 'girissonrasıprofilim.html';
+                }
+            } catch (error) {
+                alert("Giriş hatası: " + error.message);
+            }
+        }
+
+        async function handleForgotPassword() {
+            const email = document.getElementById('forgot-email').value;
+            if (!email) {
+                alert("Lütfen e-posta adresinizi girin.");
+                return;
+            }
+            try {
+                // Sunucudan yeni şifreyi al
+                const result = await API.forgotPassword({ email });
+
+                // EmailJS ile yeni şifreyi gönder
+                const templateParams = {
+                    to_email: email,
+                    new_password: result.newPassword
+                };
+
+                // BURAYA KENDİ SERVICE ID VE ŞİFRE SIFIRLAMA TEMPLATE ID'NİZİ GİRİN
+                const serviceID = 'YOUR_SERVICE_ID';
+                const templateID = 'YOUR_PASSWORD_RESET_TEMPLATE_ID';
+
+                await emailjs.send(serviceID, templateID, templateParams);
+
+                alert(`Yeni şifreniz e-posta adresinize gönderilmiştir.`);
+                showView('login-view');
+            } catch (error) {
+                alert("Hata: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

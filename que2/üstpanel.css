@@ -1,0 +1,235 @@
+
+/* ==========================================================================
+   USTPANEL.CSS - PREMIUM BUTIK STANDART NAVIGASYON
+   ========================================================================== */
+
+/* NAVBAR ANA YAPI */
+.navbar {
+    position: fixed;
+    top: 20px;
+    left: 2.5%;
+    width: 95%;
+    height: 55px !important; /* Yükseklik kilitlendi */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px !important;
+    box-sizing: border-box;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 60px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* SOL TARAF - ANA SAYFA VE KATEGORİLER */
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    height: 100%;
+}
+
+.nav-link {
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px !important;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: 0.3s ease;
+}
+
+/* SAĞ TARAF - ŞIK EMOJİLER */
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 25px !important; /* Emojiler arası mesafe sabit */
+    height: 100%;
+}
+
+.nav-right .nav-link {
+    font-size: 20px !important; /* Emoji büyüklüğü sabit */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.nav-right .nav-link:hover {
+    transform: scale(1.2);
+}
+
+/* ANİMASYON */
+@keyframes menuFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- SEPET BİLDİRİM BALONU --- */
+
+/* Sepet linkinin konumlanmasını kontrol eder */
+.nav-right .nav-link[href="sepetim.html"] {
+    position: relative; 
+}
+
+/* Kırmızı/Altın sarısı küçük yuvarlak */
+.nav-right .cart-badge {
+    position: absolute;
+    top: -2px;   /* Üstten hizalama */
+    right: -8px;  /* Sağdan hizalama */
+    background-color: #d4af37; /* Marka rengine uygun Gold/Altın tonu */
+    color: #000;
+    font-size: 11px;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #000; /* Siyah navbar ile bütünlük sağlar */
+    display: none; /* Ürün yokken gizli kalır */
+}
+
+/* GENEL AYARLAR */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #000;
+    color: #fff;
+    overflow-x: hidden;
+}
+
+/* NAVBAR (Sende eksik olan kısım) */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 5%;
+    background: rgba(0, 0, 0, 0.7); /* Şeffaf siyah */
+    backdrop-filter: blur(10px); /* Modern buzlu cam efekti */
+    z-index: 1000;
+}
+
+.nav-link {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 15px;
+    font-weight: 300;
+    letter-spacing: 1px;
+}
+
+/* ADMIN KONTROL ÜST BARI */
+.admin-control-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f8f8;
+    padding: 15px 25px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    border: 1px solid #eee;
+}
+
+.edit-mode-btn {
+    padding: 10px 25px;
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* MODERN EDİT PANELİ (APPLE STYLE) */
+.edit-panel-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(25px) saturate(150%); /* Ultra şık cam efekti */
+    z-index: 9999;
+    display: none;
+    align-items: center; justify-content: center;
+    transition: all 0.4s ease;
+}
+
+.edit-panel {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 35px;
+    border-radius: 30px;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.5);
+}
+
+.edit-panel h3 {
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 25px;
+    color: #111;
+}
+
+/* INPUT TASARIMLARI */
+.edit-input {
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    background: #fdfdfd;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: 0.3s;
+}
+
+.edit-input:focus {
+    border-color: #c5a059;
+    outline: none;
+    box-shadow: 0 0 10px rgba(197, 160, 89, 0.1);
+}
+
+/* BUTON GRUPLARI */
+.edit-btns {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* Güncelle büyük, Kapat küçük */
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.action-btn-main {
+    padding: 15px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.btn-update { background: #000; color: #fff; }
+.btn-update:hover { background: #333; transform: scale(1.02); }
+
+.btn-cancel { background: #f2f2f7; color: #8e8e93; }
+
+/* SİL BUTONU (APPLE KIRMIZISI) */
+.btn-delete {
+    grid-column: span 2; /* Tüm satırı kapla */
+    margin-top: 10px;
+    background: rgba(255, 59, 48, 0.1);
+    color: #ff3b30;
+    border: 1px solid rgba(255, 59, 48, 0.2);
+    padding: 12px;
+    border-radius: 50px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-delete:hover { background: #ff3b30; color: #ffffff; }
