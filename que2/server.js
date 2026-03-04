@@ -11,6 +11,7 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const REQUEST_LIMIT = process.env.REQUEST_LIMIT || '25mb';
+app.set('trust proxy', 1);
 
 // MongoDB Bağlantısı
 // Güvenlik için bağlantı adresi .env dosyasından alınır
@@ -223,7 +224,12 @@ app.post('/api/auth/request-password-reset', async (req, res) => {
         user.resetTokenExpires = expiresAt;
         await user.save();
 
-        const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const originHeader = req.get('origin');
+        const configuredBaseUrl = process.env.APP_BASE_URL;
+        const fallbackHost = req.get('host');
+        const fallbackBaseUrl = fallbackHost ? `https://${fallbackHost}` : '';
+        const safeOrigin = originHeader && /^https?:\/\//i.test(originHeader) ? originHeader : '';
+        const baseUrl = configuredBaseUrl || safeOrigin || fallbackBaseUrl;
         const resetLink = `${baseUrl}/sifre-sifirla.html?token=${resetToken}`;
 
         res.json({
