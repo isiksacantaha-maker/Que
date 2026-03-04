@@ -4,6 +4,9 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 // .env dosyasındaki ortam değişkenlerini yükler
 require('dotenv').config();
@@ -12,6 +15,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const REQUEST_LIMIT = process.env.REQUEST_LIMIT || '25mb';
 app.set('trust proxy', 1);
+const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_PASS || 'change-me-immediately';
+
+const ALLOWED_ORIGINS = [
+    'https://quejew.com',
+    'https://www.quejew.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    process.env.APP_BASE_URL
+].filter(Boolean);
 
 // MongoDB Bağlantısı
 // Güvenlik için bağlantı adresi .env dosyasından alınır
@@ -21,9 +33,54 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log("✅ Başardık! MongoDB Atlas Bağlantısı Tamam."))
   .catch((err) => console.log("❌ Bağlantı Hatası:", err));
 
-app.use(cors());
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+        return callback(new Error('CORS engellendi'));
+    }
+}));
+app.use(helmet());
 app.use(bodyParser.json({ limit: REQUEST_LIMIT }));
 app.use(bodyParser.urlencoded({ extended: true, limit: REQUEST_LIMIT }));
+
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Çok fazla istek gönderildi. Lütfen biraz sonra tekrar deneyin.' }
+});
+app.use('/api', apiLimiter);
+
+function signAuthToken(payload) {
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });
+}
+
+function readBearerToken(req) {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ')) return null;
+    return auth.slice(7).trim();
+}
+
+function requireAuth(req, res, next) {
+    try {
+        const token = readBearerToken(req);
+        if (!token) return res.status(401).json({ error: 'Yetkisiz erişim.' });
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (_) {
+        return res.status(401).json({ error: 'Oturum doğrulanamadı.' });
+    }
+}
+
+function requireAdmin(req, res, next) {
+    if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Bu işlem için yönetici yetkisi gerekiyor.' });
+    }
+    next();
+}
 const saltRounds = 10; // Şifre hash'leme için salt değeri
 
 // --- VERİ MODELLERİ (ŞEMALAR) ---
@@ -80,7 +137,7 @@ app.get('/api/products', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', requireAuth, requireAdmin, async (req, res) => {
     try {
         // ID yönetimi artık Mongoose'a ait (_id)
         const newProduct = new Product(req.body);
@@ -89,14 +146,14 @@ app.post('/api/products', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', requireAuth, requireAdmin, async (req, res) => {
     try {
         const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.json(updatedProduct);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', requireAuth, requireAdmin, async (req, res) => {
     try {
         await Product.findByIdAndDelete(req.params.id);
         res.json({ success: true });
@@ -104,9 +161,10 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // 2. SİPARİŞLER
-app.get('/api/orders', async (req, res) => {
+app.get('/api/orders', requireAuth, async (req, res) => {
     try {
-        const orders = await Order.find();
+        const filter = req.user.role === 'admin' ? {} : { userEmail: req.user.email };
+        const orders = await Order.find(filter);
         res.json(orders);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -122,7 +180,7 @@ app.post('/api/orders', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.put('/api/orders/:id', async (req, res) => {
+app.put('/api/orders/:id', requireAuth, requireAdmin, async (req, res) => {
     try {
         // Artık URL'deki id, Mongoose'un _id'si olmalı
         const updatedOrder = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -131,7 +189,7 @@ app.put('/api/orders/:id', async (req, res) => {
 });
 
 // 3. KULLANICILAR & AUTH
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', requireAuth, requireAdmin, async (req, res) => {
     try {
         const users = await User.find({}, '-pass');
         res.json(users);
@@ -140,12 +198,31 @@ app.get('/api/users', async (req, res) => {
 
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email } = req.body;
+        const { name, email, pass } = req.body;
+        if (!name || !email || !pass) {
+            return res.status(400).json({ error: "Ad, e-posta ve şifre zorunludur." });
+        }
+        if (String(pass).length < 6) {
+            return res.status(400).json({ error: "Şifre en az 6 karakter olmalıdır." });
+        }
+
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ error: "Bu e-posta zaten kayıtlı." });
         
-        // Şifre 'pre' hook'u sayesinde otomatik olarak hash'lenecek
-        const newUser = new User(req.body);
+        const safeName = String(name || '').trim();
+        const safeEmail = String(email || '').trim().toLowerCase();
+        const safePass = String(pass || '');
+        const safePhone = String(req.body.phone || '').trim();
+        const safeAddress = String(req.body.address || '').trim();
+
+        const newUser = new User({
+            name: safeName,
+            email: safeEmail,
+            pass: safePass,
+            phone: safePhone,
+            address: safeAddress,
+            role: 'customer'
+        });
         await newUser.save();
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -154,10 +231,14 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, pass } = req.body;
+        if (!email || !pass) {
+            return res.status(400).json({ error: "E-posta ve şifre zorunludur." });
+        }
 
         // Admin Kontrolü (.env dosyasından güvenli bir şekilde)
         if (email === process.env.ADMIN_EMAIL && pass === process.env.ADMIN_PASS) {
-            return res.json({ role: 'admin', name: 'Yönetici', email: email });
+            const token = signAuthToken({ role: 'admin', name: 'Yönetici', email });
+            return res.json({ role: 'admin', name: 'Yönetici', email: email, token });
         }
 
         const user = await User.findOne({ email });
@@ -168,16 +249,27 @@ app.post('/api/auth/login', async (req, res) => {
         // Veritabanındaki hash'lenmiş şifre ile kullanıcının girdiği şifreyi karşılaştır
         const isMatch = await bcrypt.compare(pass, user.pass);
         if (isMatch) {
-            res.json({ role: 'customer', name: user.name, email: user.email, phone: user.phone, address: user.address });
+            const token = signAuthToken({ role: user.role || 'customer', name: user.name, email: user.email });
+            res.json({ role: 'customer', name: user.name, email: user.email, phone: user.phone, address: user.address, token });
         } else {
             res.status(401).json({ error: "Hatalı giriş bilgileri." });
         }
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/users/change-password', async (req, res) => {
+app.post('/api/users/change-password', requireAuth, async (req, res) => {
     try {
         const { email, currentPass, newPass } = req.body;
+        if (!email || !currentPass || !newPass) {
+            return res.status(400).json({ error: "Tüm alanlar zorunludur." });
+        }
+        if (String(newPass).length < 6) {
+            return res.status(400).json({ error: "Yeni şifre en az 6 karakter olmalıdır." });
+        }
+        if (req.user.role !== 'admin' && req.user.email !== email) {
+            return res.status(403).json({ error: 'Sadece kendi şifrenizi değiştirebilirsiniz.' });
+        }
+
         const user = await User.findOne({ email });
 
         if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı." });
@@ -193,20 +285,9 @@ app.post('/api/users/change-password', async (req, res) => {
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
-    try {
-        const { email } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı." });
-
-        // DİKKAT: Bu kısım hala güvensiz. Yeni şifre kullanıcıya e-posta ile gönderilmelidir.
-        // Şimdilik sadece hash'leme mantığını ekliyoruz.
-        const newPassword = Math.random().toString(36).slice(-8);
-        user.pass = newPassword;
-        await user.save();
-        
-        // ASLA yeni şifreyi response'da geri dönme!
-        res.json({ success: true, message: "Yeni şifre oluşturuldu ve (normalde e-posta ile) gönderildi." }); 
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    return res.status(410).json({
+        error: "Bu endpoint güvenlik nedeniyle kapatıldı. Lütfen 'Şifremi unuttum' üzerinden bağlantı ile sıfırlayın."
+    });
 });
 
 app.post('/api/auth/request-password-reset', async (req, res) => {
@@ -215,7 +296,12 @@ app.post('/api/auth/request-password-reset', async (req, res) => {
         if (!email) return res.status(400).json({ error: "E-posta zorunludur." });
 
         const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ error: "Bu e-posta ile kayıtlı kullanıcı bulunamadı." });
+        if (!user) {
+            return res.json({
+                success: true,
+                message: "Eğer hesap mevcutsa şifre yenileme bağlantısı oluşturulmuştur."
+            });
+        }
 
         const resetToken = crypto.randomBytes(24).toString('hex');
         const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 dk
@@ -245,6 +331,9 @@ app.post('/api/auth/reset-password', async (req, res) => {
         const { token, newPass } = req.body;
         if (!token || !newPass) {
             return res.status(400).json({ error: "Token ve yeni şifre zorunludur." });
+        }
+        if (String(newPass).length < 6) {
+            return res.status(400).json({ error: "Yeni şifre en az 6 karakter olmalıdır." });
         }
 
         const user = await User.findOne({

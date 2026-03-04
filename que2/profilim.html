@@ -260,17 +260,6 @@
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
 
-            // Admin Girişi (Özel Tanımlı)
-            if (email === "oya.gugu@gmail.com" && pass === "oya13gugu") {
-                sessionStorage.setItem('isLoggedIn', 'true');
-                sessionStorage.setItem('userRole', 'admin');
-                sessionStorage.setItem('currentUser', 'Yönetici');
-                sessionStorage.setItem('currentUserEmail', email);
-                alert("Hoş geldiniz, Yönetici.");
-                window.location.href = "adminekrani.html";
-                return;
-            }
-
             try {
                 const userData = await API.login({ email, pass });
                 
@@ -278,6 +267,7 @@
                 sessionStorage.setItem('userRole', userData.role);
                 sessionStorage.setItem('currentUser', userData.name);
                 sessionStorage.setItem('currentUserEmail', userData.email);
+                if (userData.token) sessionStorage.setItem('authToken', userData.token);
                 if (userData.phone) sessionStorage.setItem('userPhone', userData.phone);
                 if (userData.address) sessionStorage.setItem('userAddress', userData.address);
 

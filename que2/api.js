@@ -35,6 +35,11 @@ async function extractErrorMessage(response, fallbackMessage) {
 }
 
 const API = {
+    getAuthHeaders() {
+        const token = sessionStorage.getItem('authToken');
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    },
+
     // --- ÜRÜN İŞLEMLERİ ---
 
     // Tüm ürünleri getir
@@ -60,7 +65,7 @@ const API = {
 
         const response = await fetch(url, {
             method: method,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
             body: JSON.stringify(payload)
         });
 
@@ -74,7 +79,8 @@ const API = {
     // Ürün Sil
     async deleteProduct(id) {
         const response = await fetch(`${API_URL}/products/${id}`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: { ...API.getAuthHeaders() }
         });
         if (!response.ok) throw new Error("Silme işlemi başarısız");
         return await response.json();
@@ -94,7 +100,7 @@ const API = {
     },
 
     async getOrders() {
-        const response = await fetch(`${API_URL}/orders`, { cache: "no-store" });
+        const response = await fetch(`${API_URL}/orders`, { cache: "no-store", headers: { ...API.getAuthHeaders() } });
         if (!response.ok) throw new Error("Siparişler yüklenemedi");
         return await response.json();
     },
@@ -115,7 +121,7 @@ const API = {
 
         const response = await fetch(`${API_URL}/orders/${orderId}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
             body: JSON.stringify(payload)
         });
 
@@ -127,7 +133,7 @@ const API = {
     },
 
     async getUsers() {
-        const response = await fetch(`${API_URL}/users`, { cache: "no-store" });
+        const response = await fetch(`${API_URL}/users`, { cache: "no-store", headers: { ...API.getAuthHeaders() } });
         if (!response.ok) throw new Error("Kullanıcılar yüklenemedi");
         return await response.json();
     },
@@ -144,8 +150,8 @@ const API = {
             body: JSON.stringify({ email, pass })
         });
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Giriş başarısız");
+            const message = await extractErrorMessage(response, "Giriş başarısız");
+            throw new Error(message);
         }
         return await response.json();
     },
@@ -166,10 +172,13 @@ const API = {
     async changePassword(data) {
         const response = await fetch(`${API_URL}/users/change-password`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
             body: JSON.stringify(data)
         });
-        if (!response.ok) throw new Error("Şifre değiştirilemedi");
+        if (!response.ok) {
+            const message = await extractErrorMessage(response, "Şifre değiştirilemedi");
+            throw new Error(message);
+        }
         return await response.json();
     },
 

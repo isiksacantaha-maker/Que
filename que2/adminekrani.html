@@ -844,6 +844,7 @@ list.innerHTML = displayOrders.map((o, idx) => {
             if (confirm('Oturumu kapatmak istediğinize emin misiniz?')) {
                 sessionStorage.removeItem('isLoggedIn');
                 sessionStorage.removeItem('userRole');
+                sessionStorage.removeItem('authToken');
                 window.location.href = 'profilim.html';
             }
         }
