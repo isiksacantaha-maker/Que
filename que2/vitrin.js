@@ -27,7 +27,8 @@ function initApp() {
 }
 
 function checkAdminAccess() {
-    const isAdmin = sessionStorage.getItem('userRole') === 'admin';
+    const role = sessionStorage.getItem('userRole');
+    const isAdmin = role === 'admin' || role === 'developer';
     const adminBar = document.getElementById('admin-edit-bar');
     const adminTools = document.getElementById('admin-only-tools');
     
@@ -60,7 +61,8 @@ async function renderProducts(filterData = null) {
     }
 
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
-    const isAdmin = sessionStorage.getItem('userRole') === 'admin';
+    const role = sessionStorage.getItem('userRole');
+    const isAdmin = role === 'admin' || role === 'developer';
     
     const displayData = filterData || allProducts;
     

@@ -18,7 +18,7 @@ function goProfile() {
         window.location.href = "profilim.html";
     } 
     // Senaryo 2: Admin girişi yapılmışsa
-    else if (userRole === 'admin') {
+    else if (userRole === 'admin' || userRole === 'developer') {
         window.location.href = "adminekrani.html";
     } 
     // Senaryo 3: Standart kullanıcı girişi yapılmışsa

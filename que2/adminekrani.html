@@ -534,7 +534,7 @@
             const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
             const role = sessionStorage.getItem('userRole');
             const token = sessionStorage.getItem('authToken');
-            return isLoggedIn && role === 'admin' && !!token;
+            return isLoggedIn && (role === 'admin' || role === 'developer') && !!token;
         }
 
         // 1. SEKMELER ARASI GEÇİŞ
@@ -882,7 +882,7 @@ list.innerHTML = displayOrders.map((o, idx) => {
         // Başlangıçta siparişler açık
         window.addEventListener('load', () => {
             if (!hasValidAdminSession()) {
-                forceAdminRelogin('Yönetici oturumu geçersiz. Lütfen tekrar giriş yapın.');
+                forceAdminRelogin('Yönetici/yazılımcı oturumu geçersiz. Lütfen tekrar giriş yapın.');
                 return;
             }
             document.getElementById('section-siparisler').classList.remove('hidden');

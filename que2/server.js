@@ -16,6 +16,10 @@ const PORT = process.env.PORT || 3000;
 const REQUEST_LIMIT = process.env.REQUEST_LIMIT || '25mb';
 app.set('trust proxy', 1);
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_PASS || 'change-me-immediately';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'oya.gugu@gmail.com';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'oya13gugu';
+const DEVELOPER_EMAIL = process.env.DEVELOPER_EMAIL;
+const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
 
 const ALLOWED_ORIGINS = [
     'https://quejew.com',
@@ -76,8 +80,8 @@ function requireAuth(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-    if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Bu işlem için yönetici yetkisi gerekiyor.' });
+    if (!req.user || !['admin', 'developer'].includes(req.user.role)) {
+        return res.status(403).json({ error: 'Bu işlem için yönetici/yazılımcı yetkisi gerekiyor.' });
     }
     next();
 }
@@ -163,7 +167,7 @@ app.delete('/api/products/:id', requireAuth, requireAdmin, async (req, res) => {
 // 2. SİPARİŞLER
 app.get('/api/orders', requireAuth, async (req, res) => {
     try {
-        const filter = req.user.role === 'admin' ? {} : { userEmail: req.user.email };
+        const filter = ['admin', 'developer'].includes(req.user.role) ? {} : { userEmail: req.user.email };
         const orders = await Order.find(filter);
         res.json(orders);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -249,9 +253,14 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // Admin Kontrolü (.env dosyasından güvenli bir şekilde)
-        if (email === process.env.ADMIN_EMAIL && pass === process.env.ADMIN_PASS) {
+        if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
             const token = signAuthToken({ role: 'admin', name: 'Yönetici', email });
             return res.json({ role: 'admin', name: 'Yönetici', email: email, token });
+        }
+
+        if (DEVELOPER_EMAIL && DEVELOPER_PASS && email === DEVELOPER_EMAIL && pass === DEVELOPER_PASS) {
+            const token = signAuthToken({ role: 'developer', name: 'Yazılımcı', email });
+            return res.json({ role: 'developer', name: 'Yazılımcı', email: email, token });
         }
 
         const user = await User.findOne({ email });
@@ -279,7 +288,7 @@ app.post('/api/users/change-password', requireAuth, async (req, res) => {
         if (String(newPass).length < 6) {
             return res.status(400).json({ error: "Yeni şifre en az 6 karakter olmalıdır." });
         }
-        if (req.user.role !== 'admin' && req.user.email !== email) {
+        if (!['admin', 'developer'].includes(req.user.role) && req.user.email !== email) {
             return res.status(403).json({ error: 'Sadece kendi şifrenizi değiştirebilirsiniz.' });
         }
 
