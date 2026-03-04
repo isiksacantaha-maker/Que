@@ -6,6 +6,12 @@ let draggedItemIndex = null;
 let currentEditImages = [];
 let currentAddImages = [];
 
+const MAX_IMAGE_COUNT = 5;
+const MAX_IMAGE_DIMENSION = 1400;
+const JPEG_QUALITY = 0.75;
+const MAX_PAYLOAD_BYTES = 23 * 1024 * 1024;
+const MIN_IMAGE_COUNT = 3;
+
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
     setupDropZone();
@@ -351,21 +357,170 @@ function setupAddDropZone() {
     });
 }
 
-function handleAddFiles(files) {
-    if (currentAddImages.length + files.length > 5) {
+async function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => reject(new Error('Dosya okunamadı'));
+        reader.readAsDataURL(file);
+    });
+}
+
+async function compressImageFile(file) {
+    const originalDataUrl = await fileToDataUrl(file);
+
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxSide = Math.max(img.width, img.height);
+            const ratio = maxSide > MAX_IMAGE_DIMENSION ? (MAX_IMAGE_DIMENSION / maxSide) : 1;
+
+            canvas.width = Math.max(1, Math.round(img.width * ratio));
+            canvas.height = Math.max(1, Math.round(img.height * ratio));
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Resim işleme başlatılamadı'));
+                return;
+            }
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const compressedDataUrl = canvas.toDataURL('image/webp', JPEG_QUALITY);
+            resolve(compressedDataUrl);
+        };
+
+        img.onerror = () => reject(new Error('Resim işlenemedi'));
+        img.src = originalDataUrl;
+    });
+}
+
+function isDataImage(value) {
+    return typeof value === 'string' && value.startsWith('data:image');
+}
+
+async function recompressDataUrl(dataUrl, maxDimension, quality, format = 'image/webp') {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxSide = Math.max(img.width, img.height);
+            const ratio = maxSide > maxDimension ? (maxDimension / maxSide) : 1;
+
+            canvas.width = Math.max(1, Math.round(img.width * ratio));
+            canvas.height = Math.max(1, Math.round(img.height * ratio));
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Resim işleme başlatılamadı'));
+                return;
+            }
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL(format, quality));
+        };
+
+        img.onerror = () => reject(new Error('Resim yeniden sıkıştırılamadı'));
+        img.src = dataUrl;
+    });
+}
+
+function getEstimatedPayloadBytes(product) {
+    try {
+        return new Blob([JSON.stringify(product)]).size;
+    } catch (_) {
+        return JSON.stringify(product).length;
+    }
+}
+
+function formatBytes(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+async function optimizeProductForUpload(product) {
+    let optimizedProduct = { ...product, imgs: [...(product.imgs || [])] };
+    let payloadBytes = getEstimatedPayloadBytes(optimizedProduct);
+
+    if (payloadBytes <= MAX_PAYLOAD_BYTES) {
+        return { product: optimizedProduct, payloadBytes, optimized: false };
+    }
+
+    const compressionProfiles = [
+        { maxDimension: 1100, quality: 0.64, format: 'image/webp' },
+        { maxDimension: 900, quality: 0.56, format: 'image/webp' },
+        { maxDimension: 760, quality: 0.48, format: 'image/webp' },
+        { maxDimension: 640, quality: 0.42, format: 'image/webp' },
+        { maxDimension: 520, quality: 0.36, format: 'image/webp' },
+        { maxDimension: 420, quality: 0.30, format: 'image/webp' },
+        { maxDimension: 360, quality: 0.26, format: 'image/webp' },
+        { maxDimension: 300, quality: 0.22, format: 'image/webp' }
+    ];
+
+    for (const profile of compressionProfiles) {
+        const recompressed = [];
+
+        for (const img of optimizedProduct.imgs) {
+            if (!isDataImage(img)) {
+                recompressed.push(img);
+                continue;
+            }
+
+            try {
+                const compressed = await recompressDataUrl(
+                    img,
+                    profile.maxDimension,
+                    profile.quality,
+                    profile.format
+                );
+                recompressed.push(compressed);
+            } catch (error) {
+                console.error('Resim optimize hatası:', error);
+                recompressed.push(img);
+            }
+        }
+
+        optimizedProduct = { ...optimizedProduct, imgs: recompressed };
+        payloadBytes = getEstimatedPayloadBytes(optimizedProduct);
+
+        if (payloadBytes <= MAX_PAYLOAD_BYTES) {
+            return { product: optimizedProduct, payloadBytes, optimized: true };
+        }
+    }
+
+    return { product: optimizedProduct, payloadBytes, optimized: true };
+}
+
+async function handleAddFiles(files) {
+    if (currentAddImages.length + files.length > MAX_IMAGE_COUNT) {
         showToast(`En fazla 5 fotoğraf ekleyebilirsiniz`);
         return;
     }
-    files.forEach(file => {
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                currentAddImages.push(e.target.result);
-                updateAddImagePreviews();
-            };
-            reader.readAsDataURL(file);
+
+    let ignoredCount = 0;
+    for (const file of files) {
+        if (!file.type.startsWith('image/')) {
+            ignoredCount++;
+            continue;
         }
-    });
+
+        try {
+            const compressedImage = await compressImageFile(file);
+            currentAddImages.push(compressedImage);
+        } catch (error) {
+            console.error('Resim sıkıştırma hatası:', error);
+            showToast(`${file.name} işlenemedi`);
+        }
+    }
+
+    updateAddImagePreviews();
+
+    if (ignoredCount > 0) {
+        showToast(`${ignoredCount} dosya resim olmadığı için atlandı`);
+    }
 }
 
 function updateAddImagePreviews() {
@@ -387,21 +542,33 @@ function removeAddImage(index) {
     updateAddImagePreviews();
 }
 
-function handleFiles(files) {
-    if (currentEditImages.length + files.length > 5) {
+async function handleFiles(files) {
+    if (currentEditImages.length + files.length > MAX_IMAGE_COUNT) {
         showToast(`En fazla 5 fotoğraf ekleyebilirsiniz`);
         return;
     }
-    files.forEach(file => {
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                currentEditImages.push(e.target.result);
-                updateImagePreviews();
-            };
-            reader.readAsDataURL(file);
+
+    let ignoredCount = 0;
+    for (const file of files) {
+        if (!file.type.startsWith('image/')) {
+            ignoredCount++;
+            continue;
         }
-    });
+
+        try {
+            const compressedImage = await compressImageFile(file);
+            currentEditImages.push(compressedImage);
+        } catch (error) {
+            console.error('Resim sıkıştırma hatası:', error);
+            showToast(`${file.name} işlenemedi`);
+        }
+    }
+
+    updateImagePreviews();
+
+    if (ignoredCount > 0) {
+        showToast(`${ignoredCount} dosya resim olmadığı için atlandı`);
+    }
 }
 
 function updateImagePreviews() {
@@ -447,7 +614,12 @@ function openAddFilePicker(event) {
 async function saveProductUpdate() {
     const id = document.getElementById('edit-id').value;
     
-    const updatedProduct = {
+    if (currentEditImages.length < MIN_IMAGE_COUNT) {
+        showToast(`Her ürün için en az ${MIN_IMAGE_COUNT} fotoğraf gerekli`);
+        return;
+    }
+
+    let updatedProduct = {
         _id: id,
         name: document.getElementById('edit-name').value,
         price: Number(document.getElementById('edit-price').value),
@@ -456,9 +628,28 @@ async function saveProductUpdate() {
         imgs: currentEditImages
     };
 
+    const updateOptimization = await optimizeProductForUpload(updatedProduct);
+    updatedProduct = updateOptimization.product;
+    currentEditImages = [...updatedProduct.imgs];
+    updateImagePreviews();
+
+    if (updateOptimization.optimized) {
+        showToast(`Görseller optimize edildi (${formatBytes(updateOptimization.payloadBytes)})`);
+    }
+
+    const updatePayloadBytes = updateOptimization.payloadBytes;
+    if (updatePayloadBytes > MAX_PAYLOAD_BYTES) {
+        alert(`Güncelleme verisi hâlâ büyük (${formatBytes(updatePayloadBytes)}). En az 3 foto korunarak daha güçlü sıkıştırma için küçük çözünürlüklü görsel kullanın.`);
+        return;
+    }
+
     try {
         await API.saveProduct(updatedProduct);
     } catch (error) {
+        if ((error.message || '').includes('413')) {
+            alert(`Güncelleme reddedildi (413). Gönderilen veri: ${formatBytes(updatePayloadBytes)}. 3 fotoğrafı koruyarak daha düşük çözünürlüklü dosya seçin.`);
+            return;
+        }
         alert("Güncelleme başarısız: " + error.message);
         return;
     }
@@ -519,18 +710,33 @@ async function saveNewProduct() {
     const price = Number(document.getElementById('add-price').value);
     const description = document.getElementById('add-desc').value.trim();
     
-    if (!name || !category || !price || currentAddImages.length === 0) {
-        showToast(`Lütfen tüm alanları doldurun ve resim yükleyin`);
+    if (!name || !category || !price || currentAddImages.length < MIN_IMAGE_COUNT) {
+        showToast(`Lütfen tüm alanları doldurun ve en az ${MIN_IMAGE_COUNT} resim yükleyin`);
         return;
     }
     
-    const newProduct = {
+    let newProduct = {
         name: name,
         category: category,
         price: price,
         description: description,
         imgs: currentAddImages
     };
+
+    const addOptimization = await optimizeProductForUpload(newProduct);
+    newProduct = addOptimization.product;
+    currentAddImages = [...newProduct.imgs];
+    updateAddImagePreviews();
+
+    if (addOptimization.optimized) {
+        showToast(`Görseller optimize edildi (${formatBytes(addOptimization.payloadBytes)})`);
+    }
+
+    const payloadBytes = addOptimization.payloadBytes;
+    if (payloadBytes > MAX_PAYLOAD_BYTES) {
+        showToast(`Yükleme hâlâ büyük (${formatBytes(payloadBytes)}). 3 fotoğrafı koruyarak daha küçük çözünürlükte görsel seçin.`);
+        return;
+    }
     
     // Buton durumunu güncelle (Loading)
     const btn = document.querySelector('#add-product-overlay .btn-update');
@@ -542,6 +748,10 @@ async function saveNewProduct() {
     try {
         createdProduct = await API.saveProduct(newProduct);
     } catch (error) {
+        if ((error.message || '').includes('413')) {
+            alert(`Ürün eklenemedi: Sunucu veri boyutunu reddetti (413). Gönderilen veri ${formatBytes(payloadBytes)}. En az 3 foto kuralı korunarak daha düşük çözünürlüklü görseller seçin.`);
+            return;
+        }
         alert("Ürün eklenemedi: " + error.message);
         return;
     } finally {

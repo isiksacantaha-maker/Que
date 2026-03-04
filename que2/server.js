@@ -9,17 +9,19 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const REQUEST_LIMIT = process.env.REQUEST_LIMIT || '25mb';
 
 // MongoDB Bağlantısı
 // Güvenlik için bağlantı adresi .env dosyasından alınır
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log("✅ Başardık! MongoDB Atlas Bağlantısı Tamam."))
   .catch((err) => console.log("❌ Bağlantı Hatası:", err));
 
 app.use(cors());
-app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.json({ limit: REQUEST_LIMIT }));
+app.use(bodyParser.urlencoded({ extended: true, limit: REQUEST_LIMIT }));
 const saltRounds = 10; // Şifre hash'leme için salt değeri
 
 // --- VERİ MODELLERİ (ŞEMALAR) ---

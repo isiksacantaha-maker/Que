@@ -129,8 +129,8 @@
   },
   "devDependencies": {},
  "scripts": {
-  "start": "node server.js",
-  "dev": "nodemon server.js"
+  "start": "node que2/server.js",
+  "dev": "nodemon que2/server.js"
 },
   "repository": {
     "type": "git",

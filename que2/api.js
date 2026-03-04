@@ -1,4 +1,38 @@
-const API_URL = "https://que-7pcg.onrender.com/api";
+const API_URL = (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+)
+    ? "http://localhost:3000/api"
+    : "https://que-7pcg.onrender.com/api";
+
+async function extractErrorMessage(response, fallbackMessage) {
+    let backendMessage = "";
+
+    try {
+        const data = await response.json();
+        backendMessage = data?.error || data?.message || "";
+    } catch (_) {
+        try {
+            backendMessage = await response.text();
+        } catch (_) {
+            backendMessage = "";
+        }
+    }
+
+    const safeBackendMessage = (backendMessage || "").trim();
+    const fallbackWithStatus = `${fallbackMessage} (HTTP ${response.status})`;
+
+    if (!safeBackendMessage) return fallbackWithStatus;
+
+    const htmlOrGeneric =
+        safeBackendMessage.startsWith('<!DOCTYPE') ||
+        safeBackendMessage.startsWith('<html') ||
+        safeBackendMessage.toLowerCase() === fallbackMessage.toLowerCase();
+
+    if (htmlOrGeneric) return fallbackWithStatus;
+
+    return `${safeBackendMessage} (HTTP ${response.status})`;
+}
 
 const API = {
     // --- ÜRÜN İŞLEMLERİ ---
@@ -30,7 +64,10 @@ const API = {
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) throw new Error("Kayıt işlemi başarısız");
+        if (!response.ok) {
+            const message = await extractErrorMessage(response, "Kayıt işlemi başarısız");
+            throw new Error(message);
+        }
         return await response.json();
     },
 
