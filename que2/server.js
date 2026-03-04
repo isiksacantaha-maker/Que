@@ -223,11 +223,11 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: "Şifre en az 6 karakter olmalıdır." });
         }
 
-        const existingUser = await User.findOne({ email });
+        const safeEmail = String(email || '').trim().toLowerCase();
+        const existingUser = await User.findOne({ email: safeEmail });
         if (existingUser) return res.status(400).json({ error: "Bu e-posta zaten kayıtlı." });
         
         const safeName = String(name || '').trim();
-        const safeEmail = String(email || '').trim().toLowerCase();
         const safePass = String(pass || '');
         const safePhone = String(req.body.phone || '').trim();
         const safeAddress = String(req.body.address || '').trim();
@@ -247,18 +247,21 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
     try {
-        const { email, pass } = req.body;
+        const rawEmail = req.body?.email;
+        const rawPass = req.body?.pass;
+        const email = String(rawEmail || '').trim().toLowerCase();
+        const pass = String(rawPass || '');
         if (!email || !pass) {
             return res.status(400).json({ error: "E-posta ve şifre zorunludur." });
         }
 
         // Admin Kontrolü (.env dosyasından güvenli bir şekilde)
-        if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
+        if (email === String(ADMIN_EMAIL || '').trim().toLowerCase() && pass.trim() === String(ADMIN_PASS || '')) {
             const token = signAuthToken({ role: 'admin', name: 'Yönetici', email });
             return res.json({ role: 'admin', name: 'Yönetici', email: email, token });
         }
 
-        if (DEVELOPER_EMAIL && DEVELOPER_PASS && email === DEVELOPER_EMAIL && pass === DEVELOPER_PASS) {
+        if (DEVELOPER_EMAIL && DEVELOPER_PASS && email === String(DEVELOPER_EMAIL).trim().toLowerCase() && pass.trim() === String(DEVELOPER_PASS)) {
             const token = signAuthToken({ role: 'developer', name: 'Yazılımcı', email });
             return res.json({ role: 'developer', name: 'Yazılımcı', email: email, token });
         }
@@ -281,7 +284,9 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/users/change-password', requireAuth, async (req, res) => {
     try {
-        const { email, currentPass, newPass } = req.body;
+        const email = String(req.body?.email || '').trim().toLowerCase();
+        const currentPass = String(req.body?.currentPass || '');
+        const newPass = String(req.body?.newPass || '');
         if (!email || !currentPass || !newPass) {
             return res.status(400).json({ error: "Tüm alanlar zorunludur." });
         }

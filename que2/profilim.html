@@ -257,8 +257,13 @@
 
         // 3. GİRİŞ YAPMA (HAVUZDAN KONTROL)
         async function handleLogin() {
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-pass').value;
+            const email = (document.getElementById('login-email').value || '').trim().toLowerCase();
+            const pass = (document.getElementById('login-pass').value || '').trim();
+
+            if (!email || !pass) {
+                alert("Lütfen e-posta ve şifre girin.");
+                return;
+            }
 
             try {
                 const userData = await API.login({ email, pass });
