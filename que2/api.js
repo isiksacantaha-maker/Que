@@ -134,7 +134,10 @@ const API = {
 
     // --- KULLANICI & GİRİŞ İŞLEMLERİ ---
 
-    async login(email, pass) {
+    async login(emailOrData, passArg) {
+        const email = typeof emailOrData === 'object' ? emailOrData?.email : emailOrData;
+        const pass = typeof emailOrData === 'object' ? emailOrData?.pass : passArg;
+
         const response = await fetch(`${API_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -167,6 +170,19 @@ const API = {
             body: JSON.stringify(data)
         });
         if (!response.ok) throw new Error("Şifre değiştirilemedi");
+        return await response.json();
+    },
+
+    async forgotPassword(data) {
+        const response = await fetch(`${API_URL}/auth/forgot-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Şifre sıfırlama başarısız");
+        }
         return await response.json();
     }
 };

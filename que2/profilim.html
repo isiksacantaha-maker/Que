@@ -185,10 +185,14 @@
     <script src="api.js"></script>
     <script>
         // --- DEĞİŞKENLER VE HAVUZ ---
+        const EMAILJS_PUBLIC_KEY = "btOzNmRVPRqmt-Rp6";
+        const EMAILJS_SERVICE_ID = window.QUE_EMAILJS_SERVICE_ID || localStorage.getItem('que_emailjs_service_id') || "service_jcy8xz8";
+        const EMAILJS_OTP_TEMPLATE_ID = window.QUE_EMAILJS_OTP_TEMPLATE_ID || localStorage.getItem('que_emailjs_otp_template_id') || "template_3ma2q0t";
+        const EMAILJS_PASSWORD_TEMPLATE_ID = window.QUE_EMAILJS_PASSWORD_TEMPLATE_ID || localStorage.getItem('que_emailjs_password_template_id') || "template_9pzhjao";
+
         // EmailJS'i başlat
         (function() {
-            // BURAYA KENDİ EMAILJS PUBLIC KEY'İNİZİ GİRİN
-            emailjs.init("btOzNmRVPRqmt-Rp6"); 
+            emailjs.init(EMAILJS_PUBLIC_KEY); 
         })();
 
         let generatedOTP = "";
@@ -222,19 +226,21 @@
                 to_email: email,
                 otp_code: generatedOTP
             };
-            
-            // BURAYA KENDİ SERVICE ID VE ONAY KODU TEMPLATE ID'NİZİ GİRİN
-            const serviceID = 'YOUR_SERVICE_ID';
-            const templateID = 'YOUR_OTP_TEMPLATE_ID';
 
-            emailjs.send(serviceID, templateID, templateParams)
+            if (!EMAILJS_SERVICE_ID || !EMAILJS_OTP_TEMPLATE_ID) {
+                alert('Mail onay sistemi yapılandırılmamış. Lütfen EmailJS Service ID ve OTP Template ID değerlerini kontrol edin.');
+                return;
+            }
+
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_OTP_TEMPLATE_ID, templateParams)
                 .then(function(response) {
                    console.log('Onay kodu e-postası gönderildi!', response.status, response.text);
                    alert('Onay kodu ' + email + ' adresine gönderildi.');
+                   document.getElementById('otp-info').innerText = email + ' adresine gönderilen kodu giriniz.';
                    showView('otp-view');
                 }, function(error) {
                    console.log('E-posta gönderilemedi...', error);
-                   alert('Onay kodu gönderilirken bir hata oluştu. Lütfen tekrar deneyin veya bilgilerinizi kontrol edin.');
+                   alert('Onay kodu gönderilemedi: ' + (error?.text || 'EmailJS hatası'));
                 });
         }
 
@@ -300,22 +306,17 @@
                 return;
             }
             try {
-                // Sunucudan yeni şifreyi al
                 const result = await API.forgotPassword({ email });
 
-                // EmailJS ile yeni şifreyi gönder
-                const templateParams = {
-                    to_email: email,
-                    new_password: result.newPassword
-                };
+                if (EMAILJS_SERVICE_ID && EMAILJS_PASSWORD_TEMPLATE_ID) {
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PASSWORD_TEMPLATE_ID, {
+                        to_email: email,
+                        reset_message: result.message || 'Şifre sıfırlama işleminiz alındı.',
+                        new_password: result.newPassword || ''
+                    });
+                }
 
-                // BURAYA KENDİ SERVICE ID VE ŞİFRE SIFIRLAMA TEMPLATE ID'NİZİ GİRİN
-                const serviceID = 'YOUR_SERVICE_ID';
-                const templateID = 'YOUR_PASSWORD_RESET_TEMPLATE_ID';
-
-                await emailjs.send(serviceID, templateID, templateParams);
-
-                alert(`Yeni şifreniz e-posta adresinize gönderilmiştir.`);
+                alert(result.message || 'Şifre sıfırlama işlemi başlatıldı.');
                 showView('login-view');
             } catch (error) {
                 alert("Hata: " + error.message);
