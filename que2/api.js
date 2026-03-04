@@ -93,6 +93,45 @@ const API = {
         return await response.json();
     },
 
+    async getOrders() {
+        const response = await fetch(`${API_URL}/orders`, { cache: "no-store" });
+        if (!response.ok) throw new Error("Siparişler yüklenemedi");
+        return await response.json();
+    },
+
+    async updateOrder(order) {
+        let orderId = order?._id || order?.id;
+
+        if (!orderId && order?.orderNumber) {
+            const allOrders = await API.getOrders();
+            const matched = allOrders.find(o => o.orderNumber === order.orderNumber || o.id === order.orderNumber);
+            orderId = matched?._id || matched?.id;
+        }
+
+        if (!orderId) throw new Error("Sipariş güncelleme için geçerli ID bulunamadı");
+
+        const payload = { ...order };
+        delete payload._id;
+
+        const response = await fetch(`${API_URL}/orders/${orderId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const message = await extractErrorMessage(response, "Sipariş güncellenemedi");
+            throw new Error(message);
+        }
+        return await response.json();
+    },
+
+    async getUsers() {
+        const response = await fetch(`${API_URL}/users`, { cache: "no-store" });
+        if (!response.ok) throw new Error("Kullanıcılar yüklenemedi");
+        return await response.json();
+    },
+
     // --- KULLANICI & GİRİŞ İŞLEMLERİ ---
 
     async login(email, pass) {

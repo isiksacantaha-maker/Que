@@ -261,6 +261,7 @@
         </div>
     </div>
 
+    <script src="api.js"></script>
     <script src="script.js"></script>
     <script>
         // GÜVENLİK KONTROLÜ: Giriş yapmayan bu sayfayı göremez
@@ -317,6 +318,10 @@
 
         let currentReturnOrderId = null;
 
+        function getOrderDisplayId(order) {
+            return order.orderNumber || order.id || order._id || 'Bilinmiyor';
+        }
+
         async function renderOrders() {
             const ordersContainer = document.getElementById('orders-section'); // HTML'deki sipariş alanı ID'si
             let allOrders = [];
@@ -361,13 +366,15 @@
                 let actionButton = '';
                 
                 // İPTAL SENARYOSU: Henüz kargoya verilmediyse
+                const orderActionId = getOrderDisplayId(order);
+
                 if (['Hazırlanıyor', 'Ödendi - Hazırlanıyor', 'Havale Bekleniyor', 'Kapıda Ödeme - Hazırlanıyor', 'Onaylandı'].includes(order.status)) {
-                    actionButton = `<button onclick="cancelOrder('${order.id}')" style="background: #fff; border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">SİPARİŞİ İPTAL ET</button>`;
+                    actionButton = `<button onclick="cancelOrder('${orderActionId}')" style="background: #fff; border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">SİPARİŞİ İPTAL ET</button>`;
                 }
                 
                 // İADE SENARYOSU: Kargoya verildiyse veya tamamlandıysa
                 else if (['Yolda', 'Tamamlandı', 'Teslim Edildi'].includes(order.status)) {
-                    actionButton = `<button onclick="openReturnModal('${order.id}')" style="background: #fff; border: 1px solid #333; color: #333; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">İADE ET</button>`;
+                    actionButton = `<button onclick="openReturnModal('${orderActionId}')" style="background: #fff; border: 1px solid #333; color: #333; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">İADE ET</button>`;
                 }
 
                 // İADE TALEBİ ALINDI BİLGİSİ
@@ -378,7 +385,7 @@
                 return `
         <div class="order-item" style="border: 1px solid #eee; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
             <div style="text-align: left;">
-                <span style="color: #aaa; font-size: 11px; letter-spacing:1px;">SİPARİŞ NO: ${order.id}</span>
+                <span style="color: #aaa; font-size: 11px; letter-spacing:1px;">SİPARİŞ NO: ${getOrderDisplayId(order)}</span>
                 <div style="font-weight: 500; margin-top: 5px;">${order.items.map(item => item.name).join(', ')}</div>
                 <small style="color: #999;">${order.date}</small>
             </div>
@@ -400,7 +407,7 @@
         async function cancelOrder(orderId) {
             if(confirm('Siparişinizi iptal etmek istediğinize emin misiniz?')) {
                 let allOrders = await API.getOrders();
-                const order = allOrders.find(o => o.id === orderId);
+                const order = allOrders.find(o => o.orderNumber === orderId || o.id === orderId || o._id === orderId);
                 
                 if (order) {
                     order.status = 'İptal Edildi';
@@ -426,7 +433,7 @@
             if (!currentReturnOrderId) return;
 
             let allOrders = await API.getOrders();
-            const order = allOrders.find(o => o.id === currentReturnOrderId);
+            const order = allOrders.find(o => o.orderNumber === currentReturnOrderId || o.id === currentReturnOrderId || o._id === currentReturnOrderId);
             
             if (order) {
                 order.status = 'İade Talebi';
