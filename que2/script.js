@@ -205,12 +205,25 @@ function proceedToPayment() {
         return;
     }
 
-    // Giriş kontrolü
+    // Giriş kontrolü (Misafir devam seçeneği ile)
     if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-        alert('Ödemeye devam etmek için lütfen giriş yapınız.');
-        window.location.href = 'profilim.html';
+        const continueAsGuest = confirm(
+            'Ödemeye devam etmek için giriş yapabilirsiniz.\n\nTamam: Üye girişi yap\nİptal: Üye girişi yapmadan devam et'
+        );
+
+        if (continueAsGuest) {
+            sessionStorage.setItem('checkout_mode', 'member');
+            window.location.href = 'profilim.html';
+            return;
+        }
+
+        sessionStorage.setItem('checkout_mode', 'guest');
+        sessionStorage.removeItem('currentUserEmail');
+        window.location.href = 'odeme.html';
         return;
     }
+
+    sessionStorage.setItem('checkout_mode', 'member');
 
     // Ödeme sayfasına yönlendir
     window.location.href = 'odeme.html';

@@ -221,11 +221,12 @@
         </div>
     </div>
 
+    <script src="api.js"></script>
     <script src="script.js"></script>
     <script>
         window.onload = () => {
             renderCart();
-            updateCartUI(); // Navbar sayacını güncelle
+            if (typeof updateCartCount === "function") updateCartCount(); // Navbar sayacını güncelle
         };
     </script>
 </body>
