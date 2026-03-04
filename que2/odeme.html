@@ -401,22 +401,11 @@
             window.location.href = 'girissonrasıprofilim.html?tab=orders';
         }
 
-        function updateCheckoutTotal() {
-            const cart = JSON.parse(sessionStorage.getItem('que_cart')) || [];
-            const allProducts = JSON.parse(localStorage.getItem('que_products')) || [];
-            let total = 0;
-
-            cart.forEach(cartItem => {
-                const product = allProducts.find(p => Number(p.id) === Number(cartItem.id));
-                if (product) {
-                    total += product.price * (cartItem.quantity || 1);
-                }
-            });
-
-            document.getElementById('checkout-total').innerText = total.toLocaleString('tr-TR') + " TL";
+        async function updateCheckoutTotal() {
+            await updateCartTotal();
         }
 
-        window.onload = () => {
+        window.onload = async () => {
             const cart = JSON.parse(sessionStorage.getItem('que_cart')) || [];
             
             // Sepet boşsa uyar
@@ -426,23 +415,24 @@
                 return;
             }
 
-            // Giriş kontrolü
+            // Giriş kontrolü (misafir ödeme seçeneğini destekler)
             const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-            const userEmail = sessionStorage.getItem('currentUserEmail');
-            if (!isLoggedIn || !userEmail) {
-                alert('Ödeme yapabilmek için lütfen giriş yapınız.');
+            const checkoutMode = sessionStorage.getItem('checkout_mode') || (isLoggedIn ? 'member' : 'guest');
+
+            if (!isLoggedIn && checkoutMode === 'member') {
+                alert('Ödemeye devam etmek için lütfen giriş yapınız.');
                 window.location.href = 'profilim.html';
                 return;
             }
 
-            updateCheckoutTotal();
+            await updateCheckoutTotal();
             updateCartCount();
             
             // Önceki adres bilgilerini yükle
             loadShippingInfo();
 
             // Giriş yapmışsa ad/soyad doldur
-            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            if (isLoggedIn) {
                 const currentUser = sessionStorage.getItem('currentUser') || '';
                 const nameParts = currentUser.split(' ');
                 if (document.getElementById('ship-name') && !document.getElementById('ship-name').value) 

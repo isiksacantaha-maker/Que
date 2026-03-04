@@ -184,13 +184,13 @@ async function updateCartTotal() {
         }
     });
 
-    const shipping = subtotal > 0 ? 0 : 0; // Ücretsiz kargo
+    const shipping = subtotal >= 3000 ? 0 : (subtotal > 0 ? 100 : 0);
     const total = subtotal + shipping;
 
     if (document.getElementById('subtotal')) 
         document.getElementById('subtotal').innerText = subtotal.toLocaleString('tr-TR') + ' TL';
     if (document.getElementById('shipping')) 
-        document.getElementById('shipping').innerText = 'Ücretsiz';
+        document.getElementById('shipping').innerText = shipping === 0 ? 'Ücretsiz' : shipping.toLocaleString('tr-TR') + ' TL';
     if (document.getElementById('grand-total')) 
         document.getElementById('grand-total').innerText = total.toLocaleString('tr-TR') + ' TL';
     if (document.getElementById('checkout-total'))
@@ -311,7 +311,8 @@ async function createOrder(status, extraFee = 0) {
         }
     });
 
-    const totalAmount = subtotal + extraFee;
+    const shippingFee = subtotal >= 3000 ? 0 : (subtotal > 0 ? 100 : 0);
+    const totalAmount = subtotal + shippingFee + extraFee;
 
     const newOrder = {
         id: orderId,
