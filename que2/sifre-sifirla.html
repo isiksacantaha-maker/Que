@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şifre Sıfırla | Que Jewelry</title>
+    <link rel="stylesheet" href="üstpanel.css">
+    <style>
+        body {
+            background-color: #fcfcfc;
+            margin: 0;
+            padding-top: 120px;
+            font-family: 'Segoe UI', sans-serif;
+            color: #333;
+        }
+
+        .reset-container {
+            max-width: 420px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .reset-container h2 {
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 5px;
+            margin-left: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 25px;
+            border: 1px solid #eee;
+            background: #f9f9f9;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #d4af37;
+            background: #fff;
+        }
+
+        .btn-black {
+            width: 100%;
+            padding: 15px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+
+        .btn-black:hover {
+            background: #d4af37;
+            color: #000;
+        }
+
+        .info {
+            font-size: 12px;
+            color: #777;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="index.html" class="nav-link">Ana Sayfa</a>
+            <a href="vitrin.html" class="nav-link">Koleksiyon</a>
+        </div>
+        <div class="nav-right">
+            <a href="begendiklerim.html" class="nav-link">❤</a>
+            <a href="profilim.html" class="nav-link">👤</a>
+            <a href="sepetim.html" class="nav-link">🛒<span id="cart-count" class="cart-badge">0</span></a>
+        </div>
+    </nav>
+
+    <div class="reset-container">
+        <h2>Şifre Yenile</h2>
+        <div class="input-group">
+            <label>YENİ ŞİFRE</label>
+            <input type="password" id="new-pass" placeholder="Yeni şifrenizi girin">
+        </div>
+        <div class="input-group">
+            <label>YENİ ŞİFRE (TEKRAR)</label>
+            <input type="password" id="new-pass-confirm" placeholder="Şifrenizi tekrar girin">
+        </div>
+        <button class="btn-black" onclick="submitReset()">ŞİFREYİ GÜNCELLE</button>
+        <p id="reset-info" class="info"></p>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetToken = urlParams.get('token');
+
+        if (!resetToken) {
+            document.getElementById('reset-info').innerText = 'Geçersiz şifre yenileme bağlantısı.';
+        }
+
+        async function submitReset() {
+            if (!resetToken) {
+                alert('Geçersiz bağlantı.');
+                return;
+            }
+
+            const newPass = document.getElementById('new-pass').value;
+            const newPassConfirm = document.getElementById('new-pass-confirm').value;
+
+            if (!newPass || !newPassConfirm) {
+                alert('Lütfen tüm alanları doldurun.');
+                return;
+            }
+
+            if (newPass !== newPassConfirm) {
+                alert('Şifreler eşleşmiyor.');
+                return;
+            }
+
+            try {
+                const result = await API.resetPassword({ token: resetToken, newPass });
+                alert(result.message || 'Şifreniz güncellendi.');
+                window.location.href = 'profilim.html';
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

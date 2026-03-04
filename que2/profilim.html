@@ -7,7 +7,6 @@
     <title>Profilim | Que Jewelry</title>
     <link rel="stylesheet" href="üstpanel.css">
 
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <style>
         body {
@@ -95,6 +94,53 @@
             display: none;
         }
 
+        .info-card {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            text-align: left;
+            font-size: 12px;
+            line-height: 1.55;
+            border: 1px solid #e8e8e8;
+            background: #fafafa;
+            color: #555;
+        }
+
+        .info-card.success {
+            background: #f4fbf7;
+            border-color: #c9ecd8;
+            color: #1f6b43;
+        }
+
+        .info-card.error {
+            background: #fff5f5;
+            border-color: #ffd9d9;
+            color: #a12e2e;
+        }
+
+        .info-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .mini-btn {
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 18px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .mini-btn:hover {
+            border-color: #cfcfcf;
+            background: #f8f8f8;
+        }
+
         .success-box {
             color: #27ae60;
             font-weight: 500;
@@ -149,18 +195,8 @@
             <label>ŞİFRE TEKRAR</label>
             <input type="password" id="reg-pass-confirm" placeholder="Şifrenizi onaylayın">
         </div>
-        <button class="btn-black" onclick="stepRegister()">KAYIT OL</button>
+        <button class="btn-black" onclick="handleRegister()">KAYIT OL</button>
         <div class="switch-text" onclick="showView('login-view')">Zaten üye misiniz? Giriş Yapın</div>
-    </div>
-
-    <div id="otp-view" class="auth-container hidden">
-        <h2>ONAY KODU</h2>
-        <p style="font-size: 13px; color: #666;" id="otp-info">Mail adresinize gönderilen kodu giriniz.</p>
-        <div class="input-group">
-            <input type="text" id="otp-input" placeholder="0000"
-                style="text-align: center; font-size: 20px; letter-spacing: 5px;">
-        </div>
-        <button class="btn-black" onclick="stepVerify()">ONAYLA</button>
     </div>
 
     <div id="success-view" class="auth-container hidden">
@@ -178,6 +214,7 @@
             <input type="email" id="forgot-email" placeholder="mail@que.com">
         </div>
         <button class="btn-black" onclick="handleForgotPassword()">YENİ ŞİFRE GÖNDER</button>
+        <div id="forgot-result" class="info-card hidden"></div>
         <div class="switch-text" onclick="showView('login-view')">Giriş ekranına dön</div>
     </div>
 
@@ -185,27 +222,22 @@
     <script src="api.js"></script>
     <script>
         // --- DEĞİŞKENLER VE HAVUZ ---
-        const EMAILJS_PUBLIC_KEY = "btOzNmRVPRqmt-Rp6";
-        const EMAILJS_SERVICE_ID = window.QUE_EMAILJS_SERVICE_ID || localStorage.getItem('que_emailjs_service_id') || "service_jcy8xz8";
-        const EMAILJS_OTP_TEMPLATE_ID = window.QUE_EMAILJS_OTP_TEMPLATE_ID || localStorage.getItem('que_emailjs_otp_template_id') || "template_3ma2q0t";
-        const EMAILJS_PASSWORD_TEMPLATE_ID = window.QUE_EMAILJS_PASSWORD_TEMPLATE_ID || localStorage.getItem('que_emailjs_password_template_id') || "template_9pzhjao";
-
-        // EmailJS'i başlat
-        (function() {
-            emailjs.init(EMAILJS_PUBLIC_KEY); 
-        })();
-
-        let generatedOTP = "";
-        let tempUser = {};
 
         // Görünüm Değiştirme
         function showView(viewId) {
             document.querySelectorAll('.auth-container').forEach(v => v.classList.add('hidden'));
             document.getElementById(viewId).classList.remove('hidden');
+
+            const forgotResult = document.getElementById('forgot-result');
+            if (forgotResult && viewId !== 'forgot-view') {
+                forgotResult.classList.add('hidden');
+                forgotResult.classList.remove('success', 'error');
+                forgotResult.innerHTML = '';
+            }
         }
 
-        // 1. KAYIT OL ADIMI
-        function stepRegister() {
+        // 1. KAYIT OL (DOĞRUDAN)
+        async function handleRegister() {
             const name = document.getElementById('reg-name').value;
             const email = document.getElementById('reg-email').value;
             const pass = document.getElementById('reg-pass').value;
@@ -213,51 +245,13 @@
 
             if (!name || !email || !pass) { alert("Lütfen tüm alanları doldurun."); return; }
             if (pass !== confirm) { alert("Şifreler eşleşmiyor!"); return; }
+            if (!/^\S+@\S+\.\S+$/.test(email)) { alert("Geçerli bir e-posta adresi giriniz."); return; }
 
-            // 4 haneli rastgele kod üret
-            generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-
-            // Kullanıcıyı geçici hafızaya al
-            tempUser = { name, email, pass };
-
-            // EmailJS ile e-posta gönder
-            const templateParams = {
-                to_name: name,
-                to_email: email,
-                otp_code: generatedOTP
-            };
-
-            if (!EMAILJS_SERVICE_ID || !EMAILJS_OTP_TEMPLATE_ID) {
-                alert('Mail onay sistemi yapılandırılmamış. Lütfen EmailJS Service ID ve OTP Template ID değerlerini kontrol edin.');
-                return;
-            }
-
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_OTP_TEMPLATE_ID, templateParams)
-                .then(function(response) {
-                   console.log('Onay kodu e-postası gönderildi!', response.status, response.text);
-                   alert('Onay kodu ' + email + ' adresine gönderildi.');
-                   document.getElementById('otp-info').innerText = email + ' adresine gönderilen kodu giriniz.';
-                   showView('otp-view');
-                }, function(error) {
-                   console.log('E-posta gönderilemedi...', error);
-                   alert('Onay kodu gönderilemedi: ' + (error?.text || 'EmailJS hatası'));
-                });
-        }
-
-        // 2. ONAY KODU DOĞRULAMA VE KALICI KAYIT
-        async function stepVerify() {
-            const userCode = document.getElementById('otp-input').value;
-
-            if (userCode === generatedOTP) {
-                try {
-                    await API.register(tempUser);
-                    showView('success-view');
-                } catch (error) {
-                    alert("Kayıt hatası: " + error.message);
-                    showView('register-view');
-                }
-            } else {
-                alert("Hatalı onay kodu! Lütfen tekrar deneyin.");
+            try {
+                await API.register({ name, email, pass });
+                showView('success-view');
+            } catch (error) {
+                alert("Kayıt hatası: " + error.message);
             }
         }
 
@@ -301,25 +295,53 @@
 
         async function handleForgotPassword() {
             const email = document.getElementById('forgot-email').value;
+            const resultBox = document.getElementById('forgot-result');
+
+            if (resultBox) {
+                resultBox.classList.add('hidden');
+                resultBox.classList.remove('success', 'error');
+                resultBox.innerHTML = '';
+            }
+
             if (!email) {
                 alert("Lütfen e-posta adresinizi girin.");
                 return;
             }
             try {
-                const result = await API.forgotPassword({ email });
-
-                if (EMAILJS_SERVICE_ID && EMAILJS_PASSWORD_TEMPLATE_ID) {
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PASSWORD_TEMPLATE_ID, {
-                        to_email: email,
-                        reset_message: result.message || 'Şifre sıfırlama işleminiz alındı.',
-                        new_password: result.newPassword || ''
-                    });
+                const result = await API.requestPasswordReset({ email });
+                if (!result?.resetLink) {
+                    throw new Error('Şifre yenileme bağlantısı oluşturulamadı.');
                 }
 
-                alert(result.message || 'Şifre sıfırlama işlemi başlatıldı.');
-                showView('login-view');
+                if (resultBox) {
+                    resultBox.classList.remove('hidden');
+                    resultBox.classList.add('success');
+                    resultBox.innerHTML = `
+                        <strong>Bağlantı hazır.</strong><br>
+                        Şifre yenileme adımına geçebilirsiniz.
+                        <div class="info-actions">
+                            <a class="mini-btn" href="${result.resetLink}">Şifre Yenileme Ekranını Aç</a>
+                            <button class="mini-btn" type="button" onclick="copyResetLink('${result.resetLink}')">Bağlantıyı Kopyala</button>
+                        </div>
+                    `;
+                }
             } catch (error) {
-                alert("Hata: " + error.message);
+                if (resultBox) {
+                    resultBox.classList.remove('hidden');
+                    resultBox.classList.add('error');
+                    resultBox.innerHTML = `<strong>İşlem başarısız:</strong> ${error.message}`;
+                } else {
+                    alert("Hata: " + error.message);
+                }
+            }
+        }
+
+        async function copyResetLink(link) {
+            try {
+                await navigator.clipboard.writeText(link);
+                alert('Şifre yenileme bağlantısı panoya kopyalandı.');
+            } catch (_) {
+                alert('Bağlantı kopyalanamadı, lütfen manuel kopyalayın.');
             }
         }
     </script>

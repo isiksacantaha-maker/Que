@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 
 // .env dosyasındaki ortam değişkenlerini yükler
 require('dotenv').config();
@@ -40,7 +41,9 @@ const UserSchema = new mongoose.Schema({
     pass: String, 
     phone: String,
     address: String,
-    role: { type: String, default: 'customer' }
+    role: { type: String, default: 'customer' },
+    resetToken: String,
+    resetTokenExpires: Date
 });
 
 // Kullanıcı kaydedilmeden ÖNCE şifreyi hash'le (güvenli hale getir)
@@ -207,6 +210,57 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         
         // ASLA yeni şifreyi response'da geri dönme!
         res.json({ success: true, message: "Yeni şifre oluşturuldu ve (normalde e-posta ile) gönderildi." }); 
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/auth/request-password-reset', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: "E-posta zorunludur." });
+
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ error: "Bu e-posta ile kayıtlı kullanıcı bulunamadı." });
+
+        const resetToken = crypto.randomBytes(24).toString('hex');
+        const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 dk
+
+        user.resetToken = resetToken;
+        user.resetTokenExpires = expiresAt;
+        await user.save();
+
+        const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const resetLink = `${baseUrl}/sifre-sifirla.html?token=${resetToken}`;
+
+        res.json({
+            success: true,
+            message: "Şifre yenileme bağlantısı oluşturuldu.",
+            resetLink
+        });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { token, newPass } = req.body;
+        if (!token || !newPass) {
+            return res.status(400).json({ error: "Token ve yeni şifre zorunludur." });
+        }
+
+        const user = await User.findOne({
+            resetToken: token,
+            resetTokenExpires: { $gt: new Date() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ error: "Geçersiz veya süresi dolmuş bağlantı." });
+        }
+
+        user.pass = newPass;
+        user.resetToken = undefined;
+        user.resetTokenExpires = undefined;
+        await user.save();
+
+        res.json({ success: true, message: "Şifreniz başarıyla güncellendi." });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

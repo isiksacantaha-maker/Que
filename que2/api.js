@@ -184,5 +184,31 @@ const API = {
             throw new Error(errorData.error || "Şifre sıfırlama başarısız");
         }
         return await response.json();
+    },
+
+    async requestPasswordReset(data) {
+        const response = await fetch(`${API_URL}/auth/request-password-reset`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Şifre yenileme bağlantısı oluşturulamadı");
+        }
+        return await response.json();
+    },
+
+    async resetPassword(data) {
+        const response = await fetch(`${API_URL}/auth/reset-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Şifre güncellenemedi");
+        }
+        return await response.json();
     }
 };
