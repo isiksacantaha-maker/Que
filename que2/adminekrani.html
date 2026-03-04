@@ -522,6 +522,21 @@
 
         let uploadedImages = [];
 
+        function forceAdminRelogin(message = 'Oturumunuz yenilenmeli. Lütfen tekrar giriş yapın.') {
+            alert(message);
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('userRole');
+            sessionStorage.removeItem('authToken');
+            window.location.href = 'profilim.html';
+        }
+
+        function hasValidAdminSession() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            const role = sessionStorage.getItem('userRole');
+            const token = sessionStorage.getItem('authToken');
+            return isLoggedIn && role === 'admin' && !!token;
+        }
+
         // 1. SEKMELER ARASI GEÇİŞ
         function switchSection(target) {
             document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
@@ -539,10 +554,26 @@
         // 4. LİSTELEME FONKSİYONLARI (Siparişler/Kullanıcılar)
         async function renderAdminOrders() {
             const list = document.getElementById('admin-order-list');
+            if (!hasValidAdminSession()) {
+                forceAdminRelogin();
+                return;
+            }
             const filter = document.getElementById('order-filter').value;
             const searchTerm = document.getElementById('order-search').value.trim().toLowerCase();
             let originalOrders = [];
-            originalOrders = await API.getOrders();
+            try {
+                originalOrders = await API.getOrders();
+            } catch (error) {
+                const errorText = String(error?.message || '');
+                if (errorText.includes('401') || errorText.toLowerCase().includes('yetkisiz')) {
+                    forceAdminRelogin();
+                    return;
+                }
+                if (list) {
+                    list.innerHTML = `<tr><td colspan="6" style="color:#c0392b; text-align:center;">Siparişler yüklenemedi: ${errorText || 'Bilinmeyen hata'}</td></tr>`;
+                }
+                return;
+            }
             
             // En yeni siparişlerin üstte görünmesi için listeyi ters çeviriyoruz
             let displayOrders = [...originalOrders].reverse();
@@ -826,14 +857,34 @@ list.innerHTML = displayOrders.map((o, idx) => {
 
         async function renderAdminUsers() {
             const list = document.getElementById('admin-user-list');
+            if (!hasValidAdminSession()) {
+                forceAdminRelogin();
+                return;
+            }
             let users = [];
-            users = await API.getUsers();
+            try {
+                users = await API.getUsers();
+            } catch (error) {
+                const errorText = String(error?.message || '');
+                if (errorText.includes('401') || errorText.toLowerCase().includes('yetkisiz')) {
+                    forceAdminRelogin();
+                    return;
+                }
+                if (list) {
+                    list.innerHTML = `<tr><td colspan="3" style="color:#c0392b; text-align:center;">Kullanıcılar yüklenemedi: ${errorText || 'Bilinmeyen hata'}</td></tr>`;
+                }
+                return;
+            }
             
             list.innerHTML = users.map(u => `<tr><td style="color:#000;">${u.name}</td><td style="color:#000;">${u.email}</td><td style="color:#000;">${u.phone || '-'}</td></tr>`).join('');
         }
 
         // Başlangıçta siparişler açık
         window.addEventListener('load', () => {
+            if (!hasValidAdminSession()) {
+                forceAdminRelogin('Yönetici oturumu geçersiz. Lütfen tekrar giriş yapın.');
+                return;
+            }
             document.getElementById('section-siparisler').classList.remove('hidden');
             document.querySelector('.admin-tab.active').click();
             renderAdminOrders();

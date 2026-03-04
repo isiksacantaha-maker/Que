@@ -101,7 +101,10 @@ const API = {
 
     async getOrders() {
         const response = await fetch(`${API_URL}/orders`, { cache: "no-store", headers: { ...API.getAuthHeaders() } });
-        if (!response.ok) throw new Error("Siparişler yüklenemedi");
+        if (!response.ok) {
+            const message = await extractErrorMessage(response, "Siparişler yüklenemedi");
+            throw new Error(message);
+        }
         return await response.json();
     },
 
@@ -134,7 +137,10 @@ const API = {
 
     async getUsers() {
         const response = await fetch(`${API_URL}/users`, { cache: "no-store", headers: { ...API.getAuthHeaders() } });
-        if (!response.ok) throw new Error("Kullanıcılar yüklenemedi");
+        if (!response.ok) {
+            const message = await extractErrorMessage(response, "Kullanıcılar yüklenemedi");
+            throw new Error(message);
+        }
         return await response.json();
     },
 
