@@ -47,15 +47,10 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Kullanıcı kaydedilmeden ÖNCE şifreyi hash'le (güvenli hale getir)
-UserSchema.pre('save', async function(next) {
-    // Sadece şifre alanı değiştirildiyse veya yeni bir kullanıcıysa hash'le
-    if (!this.isModified('pass')) return next();
-
-    try {
-        const salt = await bcrypt.genSalt(saltRounds);
-        this.pass = await bcrypt.hash(this.pass, salt);
-        next();
-    } catch (error) { next(error); }
+UserSchema.pre('save', async function() {
+    if (!this.isModified('pass')) return;
+    const salt = await bcrypt.genSalt(saltRounds);
+    this.pass = await bcrypt.hash(this.pass, salt);
 });
 
 const OrderSchema = new mongoose.Schema({

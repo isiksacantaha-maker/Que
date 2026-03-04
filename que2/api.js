@@ -157,8 +157,8 @@ const API = {
             body: JSON.stringify(userData)
         });
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Kayıt başarısız");
+            const message = await extractErrorMessage(response, "Kayıt başarısız");
+            throw new Error(message);
         }
         return await response.json();
     },
