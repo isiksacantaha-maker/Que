@@ -171,8 +171,21 @@ app.get('/api/orders', requireAuth, async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
     try {
+        let orderUserEmail = req.body.userEmail || 'misafir';
+        const maybeToken = readBearerToken(req);
+        if (maybeToken) {
+            try {
+                const decoded = jwt.verify(maybeToken, JWT_SECRET);
+                if (decoded?.email && decoded?.role !== 'admin') {
+                    orderUserEmail = decoded.email;
+                }
+            } catch (_) {
+                // Geçersiz token varsa misafir akışını bozmamak için görmezden gel
+            }
+        }
+
         // Frontend'den gelen 'id' alanını 'orderNumber' olarak kaydet
-        const orderData = { ...req.body, orderNumber: req.body.id };
+        const orderData = { ...req.body, orderNumber: req.body.id, userEmail: orderUserEmail };
         delete orderData.id; // Mongoose'un kendi _id'sini kullanmasına izin ver
         const newOrder = new Order(orderData);
         await newOrder.save();

@@ -369,12 +369,10 @@
             const ordersContainer = document.getElementById('orders-section'); // HTML'deki sipariş alanı ID'si
             let allOrders = [];
             allOrders = await API.getOrders();
-            
-            const currentUserEmail = sessionStorage.getItem('currentUserEmail');
             const whatsappNumber = localStorage.getItem('que_whatsapp_number');
 
-            // Sadece mevcut kullanıcıya ait siparişleri filtrele
-            const userOrders = allOrders.filter(order => order.userEmail === currentUserEmail);
+            // API artık kullanıcıya göre filtrelenmiş sipariş döndürüyor
+            const userOrders = Array.isArray(allOrders) ? allOrders : [];
 
             let htmlContent = '';
 

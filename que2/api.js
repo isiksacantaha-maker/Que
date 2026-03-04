@@ -92,7 +92,7 @@ const API = {
     async createOrder(order) {
         const response = await fetch(`${API_URL}/orders`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
             body: JSON.stringify(order)
         });
         if (!response.ok) throw new Error("Sipariş oluşturulamadı");
