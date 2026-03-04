@@ -17,15 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function initVideoScroll() {
     const video = document.getElementById('scrollVideo');
     const videoWrapper = document.querySelector('.video-section-wrapper');
+    const heroText = document.getElementById('v-text');
 
     if (!video || !videoWrapper) return;
 
-    // Videonun metadata'sının yüklendiğinden emin oluyoruz
-    video.addEventListener('loadedmetadata', () => {
-        console.log("🎥 Video hazır, süre:", video.duration);
-    });
+    let isVideoReady = false;
 
     const updateVideo = () => {
+        if (!isVideoReady || !video.duration || Number.isNaN(video.duration)) return;
+
         const rect = videoWrapper.getBoundingClientRect();
         const wrapperTop = window.pageYOffset + rect.top;
         const wrapperHeight = videoWrapper.offsetHeight;
@@ -39,14 +39,34 @@ function initVideoScroll() {
         
         let progress = (scrollPos - start) / (end - start);
         progress = Math.max(0, Math.min(1, progress));
-
-        if (video.readyState > 0 && !isNaN(video.duration)) {
-            video.currentTime = video.duration * progress;
-        }
+        video.currentTime = video.duration * progress;
     };
+
+    const markReady = () => {
+        isVideoReady = true;
+        video.pause();
+        updateVideo();
+        console.log("🎥 Video hazır, süre:", video.duration);
+    };
+
+    video.addEventListener('loadedmetadata', markReady);
+    video.addEventListener('canplay', markReady);
+
+    video.addEventListener('error', () => {
+        console.error('Ana sayfa videosu yüklenemedi. Dosya yolu: tanitim.mp4');
+        if (heroText) {
+            heroText.innerHTML = '<h1>Que Jewelry</h1><p style="margin-top:12px;font-size:14px;letter-spacing:2px;opacity:.8;">Tanıtım videosu yüklenemedi</p>';
+        }
+    });
+
+    if (video.readyState >= 1) markReady();
 
     // Performans için requestAnimationFrame kullanıyoruz
     window.addEventListener('scroll', () => {
+        window.requestAnimationFrame(updateVideo);
+    });
+
+    window.addEventListener('resize', () => {
         window.requestAnimationFrame(updateVideo);
     });
 }
