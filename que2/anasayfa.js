@@ -128,12 +128,21 @@ async function loadFeaturedProducts() {
 window.toggleWishlist = function(id) {
     let wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
     const index = wishlist.indexOf(id);
+    const isAdding = index === -1;
+
     if (index > -1) {
         wishlist.splice(index, 1);
     } else {
         wishlist.push(id);
     }
+
     sessionStorage.setItem('que_wishlist', JSON.stringify(wishlist));
+
+    if (isAdding) {
+        window.location.href = 'begendiklerim.html';
+        return;
+    }
+
     loadFeaturedProducts(); // Ana sayfadaki kalpleri güncelle
     // Eğer modal açıksa oradaki butonu da güncelle
     const modalFavBtn = document.querySelector('.btn-fav');

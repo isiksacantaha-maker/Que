@@ -780,20 +780,24 @@ async function deleteProductQuick(id) {
    7. YARDIMCI FONKSİYONLAR (FİLTRE & HOVER & SEPETİ & BEĞENDİLER)
    ========================================================================== */
 function toggleWishlist(id) {
-    // Bu fonksiyon artık global `script.js` dosyasından gelecek.
-    // Ancak `renderProducts()` çağrısı burada önemli.
-    // Bu yüzden global bir fonksiyonu çağırıp, ardından render işlemini tetiklemek daha doğru olur.
-    // Şimdilik bu fonksiyonu `script.js`'teki `removeFromWishlist` mantığına benzer şekilde düzenleyebiliriz.
     let wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
     const index = wishlist.indexOf(id);
+    const isAdding = index === -1;
 
     if (index > -1) {
         wishlist.splice(index, 1);
     } else {
         wishlist.push(id);
     }
+
     sessionStorage.setItem('que_wishlist', JSON.stringify(wishlist));
-    renderProducts(); // Sayfayı güncellemek için render'ı tekrar çağır.
+
+    if (isAdding) {
+        window.location.href = 'begendiklerim.html';
+        return;
+    }
+
+    renderProducts();
 }
 
 async function filterProducts() {
