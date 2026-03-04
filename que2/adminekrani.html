@@ -350,10 +350,13 @@
                             <option value="Hepsi">Tüm Siparişler</option>
                             <option value="Havale Bekleniyor">Havale Bekleyenler</option>
                             <option value="Hazırlanıyor">Hazırlananlar</option>
-                            <option value="Yolda">Yolda Olanlar</option>
+                            <option value="Kargoya Teslim Edildi">Kargoya Teslim Edilenler</option>
                             <option value="Tamamlandı">Tamamlananlar</option>
                             <option value="İptal Edildi">İptal Edilenler</option>
-                            <option value="İade Talebi">İade Talepleri</option>
+                            <option value="İade Talebi">İade Talebi</option>
+                            <option value="İade Talebi Değerlendiriliyor">İade Talebi Değerlendiriliyor</option>
+                            <option value="İade Talebi Reddedildi">İade Talebi Reddedildi</option>
+                            <option value="İade Talebi Onaylandı">İade Talebi Onaylandı</option>
                         </select>
                     </div>
                     <div style="flex: 1;">
@@ -459,7 +462,7 @@
             return {
                 trackingNumber: trackingNumber,
                 provider: cargoProviders[provider].name,
-                status: 'Yolda',
+                status: 'Kargoya Teslim Edildi',
                 lastUpdate: new Date().toLocaleString('tr-TR'),
                 location: 'Dağıtım Merkezinde'
             };
@@ -587,8 +590,12 @@ list.innerHTML = displayOrders.map((o, idx) => {
                 let rowStyle = "";
                 if (o.status === 'İptal Edildi') {
                     rowStyle = "background-color: #ffebee;"; // Açık Kırmızı
-                } else if (o.status === 'İade Talebi') {
+                } else if (o.status === 'İade Talebi' || o.status === 'İade Talebi Değerlendiriliyor') {
                     rowStyle = "background-color: #f3e5f5;"; // Açık Mor
+                } else if (o.status === 'İade Talebi Reddedildi') {
+                    rowStyle = "background-color: #fdecec;"; // Açık Kırmızı/Pembe
+                } else if (o.status === 'İade Talebi Onaylandı') {
+                    rowStyle = "background-color: #e8f7ee;"; // Açık Yeşil
                 }
 
                 // YENİ: Aksiyon Butonu Belirleme
@@ -624,10 +631,13 @@ list.innerHTML = displayOrders.map((o, idx) => {
                                 <option ${o.status.startsWith('Havale') ? 'selected' : ''}>Havale Bekleniyor</option>
                                 <option ${o.status.startsWith('Ödendi') ? 'selected' : ''}>Ödendi - Hazırlanıyor</option>
                                 <option ${o.status.startsWith('Kapıda Ödeme') ? 'selected' : ''}>Kapıda Ödeme - Hazırlanıyor</option>
-                                <option ${o.status === 'Yolda' ? 'selected' : ''}>Yolda</option>
+                                <option ${o.status === 'Kargoya Teslim Edildi' ? 'selected' : ''}>Kargoya Teslim Edildi</option>
                                 <option ${o.status === 'Tamamlandı' ? 'selected' : ''}>Tamamlandı</option>
                                 <option ${o.status === 'İptal Edildi' ? 'selected' : ''}>İptal Edildi</option>
                                 <option ${o.status === 'İade Talebi' ? 'selected' : ''}>İade Talebi</option>
+                                <option ${o.status === 'İade Talebi Değerlendiriliyor' ? 'selected' : ''}>İade Talebi Değerlendiriliyor</option>
+                                <option ${o.status === 'İade Talebi Reddedildi' ? 'selected' : ''}>İade Talebi Reddedildi</option>
+                                <option ${o.status === 'İade Talebi Onaylandı' ? 'selected' : ''}>İade Talebi Onaylandı</option>
                             </select>
                         </td>
                         <td style="vertical-align: middle;">
@@ -675,12 +685,12 @@ list.innerHTML = displayOrders.map((o, idx) => {
                         cargoName: cargoProviders[newCargoProvider].name,
                         trackingNumber: newTrackingNumber, // Manuel girilen numarayı kullan
                         trackingAPI: cargoProviders[newCargoProvider].api,
-                        status: cargoInfo?.status || 'Yolda',
+                        status: cargoInfo?.status || 'Kargoya Teslim Edildi',
                         lastUpdate: cargoInfo?.lastUpdate || new Date().toLocaleString('tr-TR'),
                         location: cargoInfo?.location || 'Dağıtım Merkezinde'
                     };
-                    // Kargo bilgisi girildiğinde durumu otomatik "Yolda" yap
-                    order.status = 'Yolda';
+                    // Kargo bilgisi girildiğinde durumu otomatik "Kargoya Teslim Edildi" yap
+                    order.status = 'Kargoya Teslim Edildi';
                     changesMade = true;
                 }
             } 
@@ -746,6 +756,10 @@ list.innerHTML = displayOrders.map((o, idx) => {
                 return;
             }
 
+            const itemSubtotal = (order.items || []).reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+            const orderTotal = typeof order.total === 'number' ? order.total : itemSubtotal;
+            const showShippingNote = itemSubtotal > 0 && itemSubtotal < 3000;
+
             const content = document.getElementById('order-detail-content');
             content.innerHTML = `
                 <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:15px; font-size:13px; color:#555;">
@@ -773,6 +787,10 @@ list.innerHTML = displayOrders.map((o, idx) => {
                         `).join('')}
                     </tbody>
                 </table>
+                <div style="margin-top:14px; text-align:right;">
+                    <div style="font-size:14px; color:#333;"><strong>Toplam:</strong> ${orderTotal.toLocaleString('tr-TR')} TL</div>
+                    ${showShippingNote ? '<div style="font-size:10px; color:#999; margin-top:3px;">*100 TL kargo ücreti dahil</div>' : ''}
+                </div>
             `;
             document.getElementById('order-detail-modal').style.display = 'flex';
         }

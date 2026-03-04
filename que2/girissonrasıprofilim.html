@@ -354,10 +354,13 @@
             // Duruma göre renk belirleme
             const getStatusColor = (status) => {
                 if (status === 'Hazırlanıyor') return '#f39c12'; // Turuncu
-                if (status === 'Yolda' || status === 'Kargoda') return '#3498db'; // Mavi
+                if (status === 'Kargoya Teslim Edildi' || status === 'Yolda' || status === 'Kargoda') return '#3498db'; // Mavi
                 if (status === 'Tamamlandı' || status === 'Teslim Edildi') return '#27ae60'; // Yeşil
                 if (status === 'İptal Edildi') return '#e74c3c'; // Kırmızı
                 if (status === 'İade Talebi') return '#9b59b6'; // Mor
+                if (status === 'İade Talebi Değerlendiriliyor') return '#8e44ad'; // Mor koyu
+                if (status === 'İade Talebi Reddedildi') return '#c0392b'; // Kırmızı koyu
+                if (status === 'İade Talebi Onaylandı') return '#16a085'; // Yeşil-mavi
                 return '#999';
             };
 
@@ -373,13 +376,22 @@
                 }
                 
                 // İADE SENARYOSU: Kargoya verildiyse veya tamamlandıysa
-                else if (['Yolda', 'Tamamlandı', 'Teslim Edildi'].includes(order.status)) {
+                else if (['Kargoya Teslim Edildi', 'Yolda', 'Tamamlandı', 'Teslim Edildi'].includes(order.status)) {
                     actionButton = `<button onclick="openReturnModal('${orderActionId}')" style="background: #fff; border: 1px solid #333; color: #333; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">İADE ET</button>`;
                 }
 
                 // İADE TALEBİ ALINDI BİLGİSİ
                 else if (order.status === 'İade Talebi') {
                     actionButton = `<div style="margin-top:10px; font-size:12px; color:#9b59b6; font-weight:600;"><i class="fas fa-clock"></i> İade talebiniz inceleniyor...</div>`;
+                }
+                else if (order.status === 'İade Talebi Değerlendiriliyor') {
+                    actionButton = `<div style="margin-top:10px; font-size:12px; color:#8e44ad; font-weight:600;"><i class="fas fa-search"></i> İade talebiniz değerlendiriliyor...</div>`;
+                }
+                else if (order.status === 'İade Talebi Reddedildi') {
+                    actionButton = `<div style="margin-top:10px; font-size:12px; color:#c0392b; font-weight:600;"><i class="fas fa-times-circle"></i> İade talebiniz reddedildi.</div>`;
+                }
+                else if (order.status === 'İade Talebi Onaylandı') {
+                    actionButton = `<div style="margin-top:10px; font-size:12px; color:#16a085; font-weight:600;"><i class="fas fa-check-circle"></i> İade talebiniz onaylandı.</div>`;
                 }
 
                 return `
