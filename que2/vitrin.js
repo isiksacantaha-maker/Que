@@ -502,10 +502,12 @@ async function saveNewProduct() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> EKLENİYOR...';
 
+    let createdProduct = null;
     try {
-        await API.saveProduct(newProduct);
+        createdProduct = await API.saveProduct(newProduct);
     } catch (error) {
         alert("Ürün eklenemedi: " + error.message);
+        return;
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -513,7 +515,7 @@ async function saveNewProduct() {
     
     closeAddProductModal();
     await renderProducts();
-    showToast(`${name} • Başarıyla eklendi`);
+    showToast(`${createdProduct?.name || name} • Başarıyla eklendi`);
 }
 
 async function deleteProductQuick(id) {

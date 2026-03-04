@@ -1,27 +1,33 @@
-const API_URL = "https://que-7pcg.onrender.com/api/";
+const API_URL = "https://que-7pcg.onrender.com/api";
 
 const API = {
     // --- ÜRÜN İŞLEMLERİ ---
 
     // Tüm ürünleri getir
     async getProducts() {
-        const response = await fetch(`${API_URL}/products`);
+        const response = await fetch(`${API_URL}/products`, { cache: "no-store" });
         if (!response.ok) throw new Error("Ürünler yüklenemedi");
         return await response.json();
     },
 
     // Ürün Kaydet (Hem Yeni Ekleme Hem Güncelleme)
     async saveProduct(product) {
-        // Eğer ürünün bir ID'si varsa GÜNCELLE (PUT), yoksa YENİ EKLE (POST)
-        const method = product.id ? "PUT" : "POST";
-        const url = product.id 
-            ? `${API_URL}/products/${product.id}` 
+        const productId = product._id || product.id;
+        const method = productId ? "PUT" : "POST";
+        const url = productId
+            ? `${API_URL}/products/${productId}`
             : `${API_URL}/products`;
+
+        const payload = { ...product };
+        if (productId) {
+            delete payload._id;
+            delete payload.id;
+        }
 
         const response = await fetch(url, {
             method: method,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(product)
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) throw new Error("Kayıt işlemi başarısız");

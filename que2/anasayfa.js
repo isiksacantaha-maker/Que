@@ -62,8 +62,8 @@ async function loadFeaturedProducts() {
     allProducts = await API.getProducts();
     
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
-    // İlk 6 ürünü al
-    const featuredProducts = allProducts.slice(0, 6);
+    // Yeni eklenen ürünler önde olacak şekilde son 6 ürünü göster
+    const featuredProducts = [...allProducts].reverse().slice(0, 6);
 
     if (featuredProducts.length === 0) {
         productGrid.innerHTML = '<p style="grid-column: span 3; text-align: center; color: #999;">Koleksiyon henüz yüklenmedi.</p>';
