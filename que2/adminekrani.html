@@ -419,6 +419,7 @@
 
     <script src="api.js"></script>
     <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
         // KARGO ŞİRKETLERİ VE API ENTEGRASYONU
         const cargoProviders = {
@@ -480,35 +481,17 @@
             };
         }
 
-        // EXCEL'E AKTARMA FONKSİYONLARI (YENİ)
-        function downloadCSV(csv, filename) {
-            const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' }); // \uFEFF for BOM to handle UTF-8 in Excel
-            const link = document.createElement('a');
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', filename);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+        // EXCEL'E AKTARMA FONKSİYONLARI
+        function downloadExcel(data, sheetName, filename) {
+            if (!window.XLSX) {
+                alert('Excel oluşturucu yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
+                return;
             }
-        }
 
-        function convertToCSV(data, headers) {
-            const headerRow = headers.join(',');
-            const rows = data.map(row => {
-                return headers.map(header => {
-                    // Sanitize data: escape commas and quotes
-                    let cell = row[header] === null || row[header] === undefined ? '' : String(row[header]);
-                    cell = cell.replace(/"/g, '""');
-                    if (cell.search(/("|,|\n)/g) >= 0) {
-                        cell = `"${cell}"`;
-                    }
-                    return cell;
-                }).join(',');
-            });
-            return [headerRow, ...rows].join('\n');
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+            XLSX.writeFile(workbook, filename);
         }
 
         async function exportOrdersToExcel() {
@@ -520,11 +503,8 @@
                 return;
             }
 
-            const headers = ['Sipariş ID', 'Tarih', 'Durum', 'Müşteri Adı', 'Müşteri Telefon', 'Müşteri Şehir', 'Müşteri Adres', 'Ürünler', 'Toplam Tutar', 'Kargo Firması', 'Takip Numarası'];
             const data = orders.map(o => ({ 'Sipariş ID': o.orderNumber, 'Tarih': o.date, 'Durum': o.status, 'Müşteri Adı': o.shippingInfo?.name || '', 'Müşteri Telefon': o.shippingInfo?.phone || '', 'Müşteri Şehir': o.shippingInfo?.city || '', 'Müşteri Adres': o.shippingInfo?.address || '', 'Ürünler': (o.items || []).map(item => `${item.quantity}x ${item.name}`).join('; '), 'Toplam Tutar': o.total, 'Kargo Firması': o.cargo?.cargoName || '', 'Takip Numarası': o.cargo?.trackingNumber || '' }));
-
-            const csv = convertToCSV(data, headers);
-            downloadCSV(csv, 'siparisler.csv');
+            downloadExcel(data, 'Siparisler', 'siparisler.xlsx');
         }
 
         async function exportUsersToExcel() {
@@ -536,10 +516,8 @@
                 return;
             }
 
-            const headers = ['İsim Soyad', 'E-Posta', 'Telefon'];
             const data = users.map(u => ({ 'İsim Soyad': u.name, 'E-Posta': u.email, 'Telefon': u.phone || '' }));
-            const csv = convertToCSV(data, headers);
-            downloadCSV(csv, 'kullanicilar.csv');
+            downloadExcel(data, 'Kullanicilar', 'kullanicilar.xlsx');
         }
 
         let uploadedImages = [];
@@ -569,17 +547,25 @@
             // En yeni siparişlerin üstte görünmesi için listeyi ters çeviriyoruz
             let displayOrders = [...originalOrders].reverse();
 
-            // YENİ: Tamamlanmış ve 40 günü geçmiş siparişleri gizle
+            // YENİ: Son işlem tarihi 40 günü geçmiş siparişleri admin listesinden gizle
             const fortyDaysAgo = new Date();
-            fortyDaysAgo.setDate(fortyDaysAgo.getDate() - 40); // 30'dan 40'a çıkarıldı
+            fortyDaysAgo.setDate(fortyDaysAgo.getDate() - 40);
 
-            displayOrders = displayOrders.filter(o => {
-                // Eğer sipariş tamamlandıysa ve tamamlanma tarihi varsa kontrol et
-                if (o.status === 'Tamamlandı' && o.completionDate) {
-                    return new Date(o.completionDate) > fortyDaysAgo;
+            const getOrderLastActionDate = (order) => {
+                if (order.updatedAt) return new Date(order.updatedAt);
+                if (order.completionDate) return new Date(order.completionDate);
+                if (order.date) {
+                    const parts = String(order.date).split('.');
+                    if (parts.length === 3) {
+                        const [day, month, year] = parts.map(Number);
+                        return new Date(year, month - 1, day);
+                    }
+                    return new Date(order.date);
                 }
-                return true; // Diğer tüm siparişleri (hazırlanan, bekleyen vb.) listede tut
-            });
+                return new Date();
+            };
+
+            displayOrders = displayOrders.filter(o => getOrderLastActionDate(o) > fortyDaysAgo);
 
 if (filter !== "Hepsi") displayOrders = displayOrders.filter(o => o.status.includes(filter));
 

@@ -64,7 +64,7 @@ const OrderSchema = new mongoose.Schema({
     shippingInfo: Object,
     cargo: Object,
     completionDate: Date
-});
+}, { timestamps: true });
 
 const Product = mongoose.model('Product', ProductSchema);
 const User = mongoose.model('User', UserSchema);
