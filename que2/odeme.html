@@ -32,6 +32,17 @@
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
         }
 
+        #step1 {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: center;
+        }
+
+        #step1 .checkout-section {
+            width: 100%;
+            max-width: 760px;
+        }
+
         /* Step Göstergesi */
         .step-indicator {
             display: flex;
@@ -319,6 +330,9 @@
                 </div>
 
                 <button class="next-btn" onclick="nextStep()">ÖDEME BİLGİLERİNE DEVAM ET →</button>
+                <a href="sepetim.html" class="back-btn" style="display:block; text-align:center; text-decoration:none; margin-top:12px;">
+                    ← SEPETE GERİ DÖN
+                </a>
             </div>
         </div>
 

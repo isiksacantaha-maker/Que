@@ -591,29 +591,38 @@ body {
 
 .delete-img-btn {
     position: absolute;
-    top: 5px; right: 5px;
-    background: #ff3b30;
-    color: #fff;
-    width: 28px; height: 28px;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #444;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    font-size: 14px;
+    font-size: 11px;
     display: flex; 
     align-items: center; 
     justify-content: center;
     cursor: pointer;
-    border: 2px solid #fff;
+    border: 1px solid rgba(255, 255, 255, 0.95);
     z-index: 10;
     transition: all 0.3s ease;
     opacity: 0;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .preview-wrapper:hover .delete-img-btn {
     opacity: 1;
+    transform: translateY(0);
 }
 
 .delete-img-btn:hover {
-    background: #ff1744;
-    transform: scale(1.15);
+    background: rgba(255, 255, 255, 1);
+    color: #b4232f;
+    border-color: rgba(180, 35, 47, 0.15);
+    transform: scale(1.08);
+    box-shadow: 0 10px 20px rgba(180, 35, 47, 0.18);
 }
 
 /* FORM INPUTS */
