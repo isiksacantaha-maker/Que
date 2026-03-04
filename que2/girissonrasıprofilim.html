@@ -197,12 +197,20 @@
             <div class="info-grid">
 
                 <div class="input-group">
-                    <label>AD SOYAD</label>
-                    <input type="text" id="p-name">
+                    <label>ADINIZ</label>
+                    <input type="text" id="p-name" placeholder="Adınız">
+                </div>
+                <div class="input-group">
+                    <label>SOYADINIZ</label>
+                    <input type="text" id="p-surname" placeholder="Soyadınız">
                 </div>
                 <div class="input-group">
                     <label>TELEFON NUMARASI</label>
                     <input type="tel" id="p-phone" placeholder="05XX XXX XX XX">
+                </div>
+                <div class="input-group">
+                    <label>ŞEHİR</label>
+                    <input type="text" id="p-city" placeholder="Şehrinizi yazınız">
                 </div>
                 <div class="input-group full-width">
                     <label>TESLİMAT ADRESİ</label>
@@ -275,12 +283,19 @@
             }
 
             // VERİLERİ YÜKLE
-            const name = sessionStorage.getItem('currentUser');
-            document.getElementById('userNameTitle').innerText = name.toUpperCase();
+            const shippingInfo = JSON.parse(sessionStorage.getItem('que_shipping_info')) || {};
+            const fullName = (sessionStorage.getItem('currentUser') || '').trim();
+            const nameParts = fullName ? fullName.split(/\s+/) : [];
+            const firstName = (shippingInfo.name || nameParts[0] || '').trim();
+            const surname = (shippingInfo.surname || nameParts.slice(1).join(' ') || '').trim();
+            const displayName = `${firstName} ${surname}`.trim() || 'HESABIM';
 
-            document.getElementById('p-name').value = name;
-            document.getElementById('p-phone').value = sessionStorage.getItem('userPhone') || "";
-            document.getElementById('p-address').value = sessionStorage.getItem('userAddress') || "";
+            document.getElementById('userNameTitle').innerText = displayName.toUpperCase();
+            document.getElementById('p-name').value = firstName;
+            document.getElementById('p-surname').value = surname;
+            document.getElementById('p-phone').value = shippingInfo.phone || sessionStorage.getItem('userPhone') || "";
+            document.getElementById('p-city').value = shippingInfo.city || sessionStorage.getItem('userCity') || "";
+            document.getElementById('p-address').value = shippingInfo.address || sessionStorage.getItem('userAddress') || "";
 
             // SİPARİŞLERİ RENDER ET
             renderOrders();
@@ -302,21 +317,27 @@
         }
 
         function saveInfo() {
-            const fullName = (document.getElementById('p-name').value || '').trim();
+            const firstName = (document.getElementById('p-name').value || '').trim();
+            const surname = (document.getElementById('p-surname').value || '').trim();
             const phone = (document.getElementById('p-phone').value || '').trim();
+            const city = (document.getElementById('p-city').value || '').trim();
             const address = (document.getElementById('p-address').value || '').trim();
+            const fullName = `${firstName} ${surname}`.trim();
 
             sessionStorage.setItem('currentUser', fullName);
             sessionStorage.setItem('userPhone', phone);
             sessionStorage.setItem('userAddress', address);
+            sessionStorage.setItem('userCity', city);
 
-            const nameParts = fullName ? fullName.split(/\s+/) : [];
+            document.getElementById('userNameTitle').innerText = (fullName || 'HESABIM').toUpperCase();
+
             const shippingInfo = JSON.parse(sessionStorage.getItem('que_shipping_info')) || {};
             const mergedShipping = {
                 ...shippingInfo,
-                name: nameParts[0] || shippingInfo.name || '',
-                surname: nameParts.slice(1).join(' ') || shippingInfo.surname || '',
+                name: firstName || shippingInfo.name || '',
+                surname: surname || shippingInfo.surname || '',
                 phone: phone || shippingInfo.phone || '',
+                city: city || shippingInfo.city || '',
                 address: address || shippingInfo.address || ''
             };
             sessionStorage.setItem('que_shipping_info', JSON.stringify(mergedShipping));
@@ -329,6 +350,10 @@
             sessionStorage.removeItem('userRole');
             sessionStorage.removeItem('currentUser');
             sessionStorage.removeItem('currentUserEmail');
+            sessionStorage.removeItem('userPhone');
+            sessionStorage.removeItem('userAddress');
+            sessionStorage.removeItem('userCity');
+            sessionStorage.removeItem('que_shipping_info');
             // Sayfayı anasayfaya yönlendir, navbar kendini otomatik "Giriş Yap"a çekecek
             window.location.href = 'index.html';
         }

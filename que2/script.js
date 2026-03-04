@@ -238,17 +238,18 @@ function saveShippingInfo() {
     const phone = document.getElementById('ship-phone')?.value || '';
     const address = document.getElementById('ship-address')?.value || '';
     const city = document.getElementById('ship-city')?.value || '';
-    const zip = document.getElementById('ship-zip')?.value || '';
 
     if (!name || !surname || !phone || !address || !city) {
         alert('Lütfen zorunlu alanları doldurunuz!');
         return false;
     }
 
-    const shippingInfo = { name, surname, phone, address, city, zip };
+    const shippingInfo = { name, surname, phone, address, city };
     sessionStorage.setItem('que_shipping_info', JSON.stringify(shippingInfo));
+    sessionStorage.setItem('currentUser', `${name} ${surname}`.trim());
     sessionStorage.setItem('userPhone', phone);
     sessionStorage.setItem('userAddress', address);
+    sessionStorage.setItem('userCity', city);
     return true;
 }
 
@@ -257,6 +258,7 @@ function loadShippingInfo() {
     const currentUser = (sessionStorage.getItem('currentUser') || '').trim();
     const userPhone = (sessionStorage.getItem('userPhone') || '').trim();
     const userAddress = (sessionStorage.getItem('userAddress') || '').trim();
+    const userCity = (sessionStorage.getItem('userCity') || '').trim();
 
     const nameParts = currentUser ? currentUser.split(/\s+/) : [];
     const fallbackName = nameParts[0] || '';
@@ -267,11 +269,10 @@ function loadShippingInfo() {
         surname: info.surname || fallbackSurname,
         phone: info.phone || userPhone,
         address: info.address || userAddress,
-        city: info.city || '',
-        zip: info.zip || ''
+        city: info.city || userCity
     };
 
-    if (mergedInfo.name || mergedInfo.surname || mergedInfo.phone || mergedInfo.address || mergedInfo.city || mergedInfo.zip) {
+    if (mergedInfo.name || mergedInfo.surname || mergedInfo.phone || mergedInfo.address || mergedInfo.city) {
         sessionStorage.setItem('que_shipping_info', JSON.stringify(mergedInfo));
     }
     if (document.getElementById('ship-name')) document.getElementById('ship-name').value = mergedInfo.name || '';
@@ -279,7 +280,6 @@ function loadShippingInfo() {
     if (document.getElementById('ship-phone')) document.getElementById('ship-phone').value = mergedInfo.phone || '';
     if (document.getElementById('ship-address')) document.getElementById('ship-address').value = mergedInfo.address || '';
     if (document.getElementById('ship-city')) document.getElementById('ship-city').value = mergedInfo.city || '';
-    if (document.getElementById('ship-zip')) document.getElementById('ship-zip').value = mergedInfo.zip || '';
 }
 
 function processPayment() {
