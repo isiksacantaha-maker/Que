@@ -15,9 +15,10 @@ const API_URL_FALLBACKS = (
 const API_BASE_STORAGE_KEY = 'que_api_base';
 const PRODUCT_CACHE_STORAGE_KEY = 'que_products_cache_v1';
 const PRODUCT_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 saat
-const PRODUCT_REQUEST_TIMEOUT_MS = 12000;
-const PRODUCT_RETRY_COUNT = 2;
-const PRODUCT_RETRY_BACKOFF_MS = 600;
+const PRODUCT_REQUEST_TIMEOUT_MS = 5000;
+const PRODUCT_RETRY_COUNT = 1;
+const PRODUCT_RETRY_BACKOFF_MS = 250;
+const PRODUCT_FAST_CACHE_WINDOW_MS = 1200;
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -129,6 +130,33 @@ async function fetchProductsFromBase(baseUrl) {
     throw lastError || new Error("Ürünler yüklenemedi");
 }
 
+async function fetchAndMergeProductsFromSources() {
+    let lastError = null;
+    let hasLiveSource = false;
+    const mergedProducts = [];
+    const seenKeys = new Set();
+
+    for (const baseUrl of getApiBaseCandidates()) {
+        try {
+            const products = await fetchProductsFromBase(baseUrl);
+            rememberApiBase(baseUrl);
+            hasLiveSource = true;
+
+            products.forEach(product => {
+                const key = buildProductMergeKey(product);
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    mergedProducts.push(product);
+                }
+            });
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    return { mergedProducts, hasLiveSource, lastError };
+}
+
 function uniqueApiBases(items) {
     const normalized = [];
     const seen = new Set();
@@ -198,46 +226,60 @@ const API = {
 
     // Tüm ürünleri getir
     async getProducts() {
-        let lastError = null;
-        let hasLiveSource = false;
-        const mergedProducts = [];
-        const seenKeys = new Set();
+        const cachedProducts = readProductCache();
+        if (cachedProducts) {
+            const liveFetchPromise = fetchAndMergeProductsFromSources();
 
-        for (const baseUrl of getApiBaseCandidates()) {
             try {
-                const products = await fetchProductsFromBase(baseUrl);
-                rememberApiBase(baseUrl);
-                hasLiveSource = true;
+                const fastLive = await Promise.race([
+                    liveFetchPromise,
+                    delay(PRODUCT_FAST_CACHE_WINDOW_MS).then(() => null)
+                ]);
 
-                products.forEach(product => {
-                    const key = buildProductMergeKey(product);
-                    if (!seenKeys.has(key)) {
-                        seenKeys.add(key);
-                        mergedProducts.push(product);
+                if (fastLive) {
+                    if (fastLive.mergedProducts.length > 0) {
+                        writeProductCache(fastLive.mergedProducts);
+                        return fastLive.mergedProducts;
                     }
-                });
-            } catch (error) {
-                lastError = error;
+
+                    if (fastLive.hasLiveSource) {
+                        writeProductCache([]);
+                        return [];
+                    }
+                }
+            } catch (_) {
+                // Cache'e hızlı dönüş için bu aşamada hatayı yutuyoruz.
             }
+
+            liveFetchPromise
+                .then(result => {
+                    if (result.mergedProducts.length > 0) {
+                        writeProductCache(result.mergedProducts);
+                        return;
+                    }
+                    if (result.hasLiveSource) {
+                        writeProductCache([]);
+                    }
+                })
+                .catch(() => {});
+
+            console.warn('Canlı ürün verisi geç geldiği için önbellekteki ürünler gösteriliyor.');
+            return cachedProducts;
         }
 
-        if (mergedProducts.length > 0) {
-            writeProductCache(mergedProducts);
-            return mergedProducts;
+        const liveResult = await fetchAndMergeProductsFromSources();
+
+        if (liveResult.mergedProducts.length > 0) {
+            writeProductCache(liveResult.mergedProducts);
+            return liveResult.mergedProducts;
         }
 
-        if (hasLiveSource) {
+        if (liveResult.hasLiveSource) {
             writeProductCache([]);
             return [];
         }
 
-        const cachedProducts = readProductCache();
-        if (cachedProducts) {
-            console.warn('Canlı ürün verisi alınamadı, son başarılı ürün listesi gösteriliyor.');
-            return cachedProducts;
-        }
-
-        throw lastError || new Error("Ürünler yüklenemedi");
+        throw liveResult.lastError || new Error("Ürünler yüklenemedi");
     },
 
     // Ürün Kaydet (Hem Yeni Ekleme Hem Güncelleme)
