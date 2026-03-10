@@ -9,7 +9,7 @@ const API_URL_FALLBACKS = (
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1"
 )
-    ? ["http://localhost:3000/api", "https://que-7pcg.onrender.com/api"]
+    ? ["https://que-7pcg.onrender.com/api", "http://localhost:3000/api"]
     : ["/api", "https://que-7pcg.onrender.com/api"];
 
 async function extractErrorMessage(response, fallbackMessage) {
@@ -52,12 +52,19 @@ const API = {
     // Tüm ürünleri getir
     async getProducts() {
         let lastError = null;
+        let emptyResult = null;
 
         for (const baseUrl of API_URL_FALLBACKS) {
             try {
                 const response = await fetch(`${baseUrl}/products`, { cache: "no-store" });
 
-                if (response.ok) return await response.json();
+                if (response.ok) {
+                    const products = await response.json();
+                    if (Array.isArray(products) && products.length > 0) return products;
+                    // Farklı bir kaynakta ürün varsa boş listeye düşme.
+                    emptyResult = Array.isArray(products) ? products : [];
+                    continue;
+                }
 
                 // Bazı eski kurulumlarda ürün endpoint'i token isteyebildiği için ikinci şans ver.
                 if ((response.status === 401 || response.status === 403) && sessionStorage.getItem('authToken')) {
@@ -65,7 +72,12 @@ const API = {
                         cache: "no-store",
                         headers: { ...API.getAuthHeaders() }
                     });
-                    if (retryWithAuth.ok) return await retryWithAuth.json();
+                    if (retryWithAuth.ok) {
+                        const products = await retryWithAuth.json();
+                        if (Array.isArray(products) && products.length > 0) return products;
+                        emptyResult = Array.isArray(products) ? products : [];
+                        continue;
+                    }
                     const retryMessage = await extractErrorMessage(retryWithAuth, "Ürünler yüklenemedi");
                     lastError = new Error(retryMessage);
                     continue;
@@ -78,6 +90,7 @@ const API = {
             }
         }
 
+        if (emptyResult) return emptyResult;
         throw lastError || new Error("Ürünler yüklenemedi");
     },
 
