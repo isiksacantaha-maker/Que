@@ -18,7 +18,6 @@ const PRODUCT_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 saat
 const PRODUCT_REQUEST_TIMEOUT_MS = 5000;
 const PRODUCT_RETRY_COUNT = 1;
 const PRODUCT_RETRY_BACKOFF_MS = 250;
-const PRODUCT_FAST_CACHE_WINDOW_MS = 1200;
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -228,30 +227,7 @@ const API = {
     async getProducts() {
         const cachedProducts = readProductCache();
         if (cachedProducts) {
-            const liveFetchPromise = fetchAndMergeProductsFromSources();
-
-            try {
-                const fastLive = await Promise.race([
-                    liveFetchPromise,
-                    delay(PRODUCT_FAST_CACHE_WINDOW_MS).then(() => null)
-                ]);
-
-                if (fastLive) {
-                    if (fastLive.mergedProducts.length > 0) {
-                        writeProductCache(fastLive.mergedProducts);
-                        return fastLive.mergedProducts;
-                    }
-
-                    if (fastLive.hasLiveSource) {
-                        writeProductCache([]);
-                        return [];
-                    }
-                }
-            } catch (_) {
-                // Cache'e hızlı dönüş için bu aşamada hatayı yutuyoruz.
-            }
-
-            liveFetchPromise
+            fetchAndMergeProductsFromSources()
                 .then(result => {
                     if (result.mergedProducts.length > 0) {
                         writeProductCache(result.mergedProducts);
@@ -262,8 +238,6 @@ const API = {
                     }
                 })
                 .catch(() => {});
-
-            console.warn('Canlı ürün verisi geç geldiği için önbellekteki ürünler gösteriliyor.');
             return cachedProducts;
         }
 
