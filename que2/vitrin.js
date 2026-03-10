@@ -93,6 +93,7 @@ async function renderProducts(filterData = null) {
                  ondragover="event.preventDefault()" 
                  ondrop="handleDrop(${index})"
                  onmousemove="handleProductHover(event, this)"
+                  onmouseleave="resetProductHover(this)"
                  onclick="handleProductAction(event, '${p._id}')">
                 
                 ${adminTrigger}
@@ -820,9 +821,23 @@ async function filterProducts() {
 
 function handleProductHover(e, card) {
     const slider = card.querySelector('.image-slider');
+    if (!slider) return;
+
     const rect = slider.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const index = Math.floor(x / (rect.width / 3));
     const images = card.querySelectorAll('.p-img');
+
+    if (!images.length) return;
+
+    // Kenarlarda oluşan taşmaları engelleyip her zaman geçerli bir görsel seç.
+    const rawIndex = Math.floor(x / (rect.width / images.length));
+    const index = Math.max(0, Math.min(images.length - 1, rawIndex));
+
     images.forEach((img, i) => img.classList.toggle('active', i === index));
+}
+
+function resetProductHover(card) {
+    const images = card.querySelectorAll('.p-img');
+    if (!images.length) return;
+    images.forEach((img, i) => img.classList.toggle('active', i === 0));
 }

@@ -102,6 +102,7 @@ async function loadFeaturedProducts() {
         return `
             <div class="product-card" 
                  onmousemove="handleProductHover(event, this)"
+                  onmouseleave="resetProductHover(this)"
                  onclick="openDetailModal('${p._id}')">
                 
                 <div class="card-actions">
@@ -264,9 +265,23 @@ function closeDetailModal() {
    ========================================================================== */
 function handleProductHover(e, card) {
     const slider = card.querySelector('.image-slider');
+    if (!slider) return;
+
     const rect = slider.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const index = Math.floor(x / (rect.width / 3));
     const images = card.querySelectorAll('.p-img');
+
+    if (!images.length) return;
+
+    // Fare pozisyonunu güvenli aralıkta tutarak boş kare oluşmasını engelle.
+    const rawIndex = Math.floor(x / (rect.width / images.length));
+    const index = Math.max(0, Math.min(images.length - 1, rawIndex));
+
     images.forEach((img, i) => img.classList.toggle('active', i === index));
+}
+
+function resetProductHover(card) {
+    const images = card.querySelectorAll('.p-img');
+    if (!images.length) return;
+    images.forEach((img, i) => img.classList.toggle('active', i === 0));
 }
