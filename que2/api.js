@@ -13,6 +13,121 @@ const API_URL_FALLBACKS = (
     : ["/api", "https://que-7pcg.onrender.com/api"];
 
 const API_BASE_STORAGE_KEY = 'que_api_base';
+const PRODUCT_CACHE_STORAGE_KEY = 'que_products_cache_v1';
+const PRODUCT_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 saat
+const PRODUCT_REQUEST_TIMEOUT_MS = 12000;
+const PRODUCT_RETRY_COUNT = 2;
+const PRODUCT_RETRY_BACKOFF_MS = 600;
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isRetryableStatus(status) {
+    return status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = PRODUCT_REQUEST_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+function readProductCache() {
+    try {
+        const raw = localStorage.getItem(PRODUCT_CACHE_STORAGE_KEY);
+        if (!raw) return null;
+
+        const parsed = JSON.parse(raw);
+        const timestamp = Number(parsed?.timestamp || 0);
+        const products = parsed?.products;
+
+        if (!Array.isArray(products) || !timestamp) return null;
+        if (Date.now() - timestamp > PRODUCT_CACHE_TTL_MS) return null;
+
+        return products;
+    } catch (_) {
+        return null;
+    }
+}
+
+function writeProductCache(products) {
+    try {
+        if (!Array.isArray(products)) return;
+        localStorage.setItem(PRODUCT_CACHE_STORAGE_KEY, JSON.stringify({
+            timestamp: Date.now(),
+            products
+        }));
+    } catch (_) {
+        // localStorage bazı tarayıcı modlarında kısıtlı olabilir.
+    }
+}
+
+async function fetchProductsFromBase(baseUrl) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= PRODUCT_RETRY_COUNT; attempt++) {
+        try {
+            const response = await fetchWithTimeout(`${baseUrl}/products`, { cache: "no-store" });
+
+            if (response.ok) {
+                const products = await response.json();
+                return Array.isArray(products) ? products : [];
+            }
+
+            if ((response.status === 401 || response.status === 403) && sessionStorage.getItem('authToken')) {
+                const retryWithAuth = await fetchWithTimeout(`${baseUrl}/products`, {
+                    cache: "no-store",
+                    headers: { ...API.getAuthHeaders() }
+                });
+
+                if (retryWithAuth.ok) {
+                    const products = await retryWithAuth.json();
+                    return Array.isArray(products) ? products : [];
+                }
+
+                const retryMessage = await extractErrorMessage(retryWithAuth, "Ürünler yüklenemedi");
+                lastError = new Error(retryMessage);
+
+                if (isRetryableStatus(retryWithAuth.status) && attempt < PRODUCT_RETRY_COUNT) {
+                    await delay(PRODUCT_RETRY_BACKOFF_MS * (attempt + 1));
+                    continue;
+                }
+
+                throw lastError;
+            }
+
+            const message = await extractErrorMessage(response, "Ürünler yüklenemedi");
+            lastError = new Error(message);
+
+            if (isRetryableStatus(response.status) && attempt < PRODUCT_RETRY_COUNT) {
+                await delay(PRODUCT_RETRY_BACKOFF_MS * (attempt + 1));
+                continue;
+            }
+
+            throw lastError;
+        } catch (error) {
+            const isTimeout = error?.name === 'AbortError';
+            lastError = isTimeout
+                ? new Error('Ürün isteği zaman aşımına uğradı')
+                : error;
+
+            if (attempt < PRODUCT_RETRY_COUNT) {
+                await delay(PRODUCT_RETRY_BACKOFF_MS * (attempt + 1));
+                continue;
+            }
+
+            throw lastError;
+        }
+    }
+
+    throw lastError || new Error("Ürünler yüklenemedi");
+}
 
 function uniqueApiBases(items) {
     const normalized = [];
@@ -84,65 +199,44 @@ const API = {
     // Tüm ürünleri getir
     async getProducts() {
         let lastError = null;
-        let hasSuccessfulSource = false;
+        let hasLiveSource = false;
         const mergedProducts = [];
         const seenKeys = new Set();
 
         for (const baseUrl of getApiBaseCandidates()) {
             try {
-                const response = await fetch(`${baseUrl}/products`, { cache: "no-store" });
+                const products = await fetchProductsFromBase(baseUrl);
+                rememberApiBase(baseUrl);
+                hasLiveSource = true;
 
-                if (response.ok) {
-                    rememberApiBase(baseUrl);
-                    hasSuccessfulSource = true;
-                    const products = await response.json();
-                    if (!Array.isArray(products)) continue;
-
-                    products.forEach(product => {
-                        const key = buildProductMergeKey(product);
-                        if (!seenKeys.has(key)) {
-                            seenKeys.add(key);
-                            mergedProducts.push(product);
-                        }
-                    });
-                    continue;
-                }
-
-                // Bazı eski kurulumlarda ürün endpoint'i token isteyebildiği için ikinci şans ver.
-                if ((response.status === 401 || response.status === 403) && sessionStorage.getItem('authToken')) {
-                    const retryWithAuth = await fetch(`${baseUrl}/products`, {
-                        cache: "no-store",
-                        headers: { ...API.getAuthHeaders() }
-                    });
-                    if (retryWithAuth.ok) {
-                        rememberApiBase(baseUrl);
-                        hasSuccessfulSource = true;
-                        const products = await retryWithAuth.json();
-                        if (!Array.isArray(products)) continue;
-
-                        products.forEach(product => {
-                            const key = buildProductMergeKey(product);
-                            if (!seenKeys.has(key)) {
-                                seenKeys.add(key);
-                                mergedProducts.push(product);
-                            }
-                        });
-                        continue;
+                products.forEach(product => {
+                    const key = buildProductMergeKey(product);
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        mergedProducts.push(product);
                     }
-                    const retryMessage = await extractErrorMessage(retryWithAuth, "Ürünler yüklenemedi");
-                    lastError = new Error(retryMessage);
-                    continue;
-                }
-
-                const message = await extractErrorMessage(response, "Ürünler yüklenemedi");
-                lastError = new Error(message);
+                });
             } catch (error) {
                 lastError = error;
             }
         }
 
-        if (mergedProducts.length > 0) return mergedProducts;
-        if (hasSuccessfulSource) return [];
+        if (mergedProducts.length > 0) {
+            writeProductCache(mergedProducts);
+            return mergedProducts;
+        }
+
+        if (hasLiveSource) {
+            writeProductCache([]);
+            return [];
+        }
+
+        const cachedProducts = readProductCache();
+        if (cachedProducts) {
+            console.warn('Canlı ürün verisi alınamadı, son başarılı ürün listesi gösteriliyor.');
+            return cachedProducts;
+        }
+
         throw lastError || new Error("Ürünler yüklenemedi");
     },
 
