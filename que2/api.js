@@ -12,6 +12,38 @@ const API_URL_FALLBACKS = (
     ? ["https://que-7pcg.onrender.com/api", "http://localhost:3000/api"]
     : ["/api", "https://que-7pcg.onrender.com/api"];
 
+const API_BASE_STORAGE_KEY = 'que_api_base';
+
+function uniqueApiBases(items) {
+    const normalized = [];
+    const seen = new Set();
+    items.filter(Boolean).forEach(item => {
+        const value = String(item).trim();
+        if (!value || seen.has(value)) return;
+        seen.add(value);
+        normalized.push(value);
+    });
+    return normalized;
+}
+
+function getApiBaseCandidates() {
+    const remembered = sessionStorage.getItem(API_BASE_STORAGE_KEY);
+    return uniqueApiBases([remembered, API_URL, ...API_URL_FALLBACKS]);
+}
+
+function rememberApiBase(baseUrl) {
+    if (!baseUrl) return;
+    sessionStorage.setItem(API_BASE_STORAGE_KEY, baseUrl);
+}
+
+function buildProductMergeKey(product) {
+    if (product?._id) return `id:${product._id}`;
+    const name = String(product?.name || '').trim().toLowerCase();
+    const price = Number(product?.price || 0);
+    const firstImg = String((product?.imgs && product.imgs[0]) || '').trim();
+    return `fp:${name}|${price}|${firstImg}`;
+}
+
 async function extractErrorMessage(response, fallbackMessage) {
     let backendMessage = "";
 
@@ -52,17 +84,27 @@ const API = {
     // Tüm ürünleri getir
     async getProducts() {
         let lastError = null;
-        let emptyResult = null;
+        let hasSuccessfulSource = false;
+        const mergedProducts = [];
+        const seenKeys = new Set();
 
-        for (const baseUrl of API_URL_FALLBACKS) {
+        for (const baseUrl of getApiBaseCandidates()) {
             try {
                 const response = await fetch(`${baseUrl}/products`, { cache: "no-store" });
 
                 if (response.ok) {
+                    rememberApiBase(baseUrl);
+                    hasSuccessfulSource = true;
                     const products = await response.json();
-                    if (Array.isArray(products) && products.length > 0) return products;
-                    // Farklı bir kaynakta ürün varsa boş listeye düşme.
-                    emptyResult = Array.isArray(products) ? products : [];
+                    if (!Array.isArray(products)) continue;
+
+                    products.forEach(product => {
+                        const key = buildProductMergeKey(product);
+                        if (!seenKeys.has(key)) {
+                            seenKeys.add(key);
+                            mergedProducts.push(product);
+                        }
+                    });
                     continue;
                 }
 
@@ -73,9 +115,18 @@ const API = {
                         headers: { ...API.getAuthHeaders() }
                     });
                     if (retryWithAuth.ok) {
+                        rememberApiBase(baseUrl);
+                        hasSuccessfulSource = true;
                         const products = await retryWithAuth.json();
-                        if (Array.isArray(products) && products.length > 0) return products;
-                        emptyResult = Array.isArray(products) ? products : [];
+                        if (!Array.isArray(products)) continue;
+
+                        products.forEach(product => {
+                            const key = buildProductMergeKey(product);
+                            if (!seenKeys.has(key)) {
+                                seenKeys.add(key);
+                                mergedProducts.push(product);
+                            }
+                        });
                         continue;
                     }
                     const retryMessage = await extractErrorMessage(retryWithAuth, "Ürünler yüklenemedi");
@@ -90,7 +141,8 @@ const API = {
             }
         }
 
-        if (emptyResult) return emptyResult;
+        if (mergedProducts.length > 0) return mergedProducts;
+        if (hasSuccessfulSource) return [];
         throw lastError || new Error("Ürünler yüklenemedi");
     },
 
@@ -98,9 +150,9 @@ const API = {
     async saveProduct(product) {
         const productId = product._id || product.id;
         const method = productId ? "PUT" : "POST";
-        const url = productId
-            ? `${API_URL}/products/${productId}`
-            : `${API_URL}/products`;
+        const path = productId
+            ? `/products/${productId}`
+            : `/products`;
 
         const payload = { ...product };
         if (productId) {
@@ -108,49 +160,99 @@ const API = {
             delete payload.id;
         }
 
-        const response = await fetch(url, {
-            method: method,
-            headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
-            body: JSON.stringify(payload)
-        });
+        let lastError = null;
+        for (const baseUrl of getApiBaseCandidates()) {
+            try {
+                const response = await fetch(`${baseUrl}${path}`, {
+                    method: method,
+                    headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
+                    body: JSON.stringify(payload)
+                });
 
-        if (!response.ok) {
-            const message = await extractErrorMessage(response, "Kayıt işlemi başarısız");
-            throw new Error(message);
+                if (response.ok) {
+                    rememberApiBase(baseUrl);
+                    return await response.json();
+                }
+
+                const message = await extractErrorMessage(response, "Kayıt işlemi başarısız");
+                lastError = new Error(message);
+            } catch (error) {
+                lastError = error;
+            }
         }
-        return await response.json();
+
+        throw lastError || new Error("Kayıt işlemi başarısız");
     },
 
     // Ürün Sil
     async deleteProduct(id) {
-        const response = await fetch(`${API_URL}/products/${id}`, {
-            method: "DELETE",
-            headers: { ...API.getAuthHeaders() }
-        });
-        if (!response.ok) throw new Error("Silme işlemi başarısız");
-        return await response.json();
+        let lastError = null;
+        for (const baseUrl of getApiBaseCandidates()) {
+            try {
+                const response = await fetch(`${baseUrl}/products/${id}`, {
+                    method: "DELETE",
+                    headers: { ...API.getAuthHeaders() }
+                });
+
+                if (response.ok) {
+                    rememberApiBase(baseUrl);
+                    return await response.json();
+                }
+
+                const message = await extractErrorMessage(response, "Silme işlemi başarısız");
+                lastError = new Error(message);
+            } catch (error) {
+                lastError = error;
+            }
+        }
+        throw lastError || new Error("Silme işlemi başarısız");
     },
 
     // --- SİPARİŞ İŞLEMLERİ ---
 
     // Sipariş Oluştur
     async createOrder(order) {
-        const response = await fetch(`${API_URL}/orders`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
-            body: JSON.stringify(order)
-        });
-        if (!response.ok) throw new Error("Sipariş oluşturulamadı");
-        return await response.json();
+        let lastError = null;
+        for (const baseUrl of getApiBaseCandidates()) {
+            try {
+                const response = await fetch(`${baseUrl}/orders`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
+                    body: JSON.stringify(order)
+                });
+
+                if (response.ok) {
+                    rememberApiBase(baseUrl);
+                    return await response.json();
+                }
+
+                const message = await extractErrorMessage(response, "Sipariş oluşturulamadı");
+                lastError = new Error(message);
+            } catch (error) {
+                lastError = error;
+            }
+        }
+        throw lastError || new Error("Sipariş oluşturulamadı");
     },
 
     async getOrders() {
-        const response = await fetch(`${API_URL}/orders`, { cache: "no-store", headers: { ...API.getAuthHeaders() } });
-        if (!response.ok) {
-            const message = await extractErrorMessage(response, "Siparişler yüklenemedi");
-            throw new Error(message);
+        let lastError = null;
+        for (const baseUrl of getApiBaseCandidates()) {
+            try {
+                const response = await fetch(`${baseUrl}/orders`, { cache: "no-store", headers: { ...API.getAuthHeaders() } });
+                if (response.ok) {
+                    rememberApiBase(baseUrl);
+                    return await response.json();
+                }
+
+                const message = await extractErrorMessage(response, "Siparişler yüklenemedi");
+                lastError = new Error(message);
+            } catch (error) {
+                lastError = error;
+            }
         }
-        return await response.json();
+
+        throw lastError || new Error("Siparişler yüklenemedi");
     },
 
     async updateOrder(order) {
@@ -167,26 +269,48 @@ const API = {
         const payload = { ...order };
         delete payload._id;
 
-        const response = await fetch(`${API_URL}/orders/${orderId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
-            body: JSON.stringify(payload)
-        });
+        let lastError = null;
+        for (const baseUrl of getApiBaseCandidates()) {
+            try {
+                const response = await fetch(`${baseUrl}/orders/${orderId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json", ...API.getAuthHeaders() },
+                    body: JSON.stringify(payload)
+                });
 
-        if (!response.ok) {
-            const message = await extractErrorMessage(response, "Sipariş güncellenemedi");
-            throw new Error(message);
+                if (response.ok) {
+                    rememberApiBase(baseUrl);
+                    return await response.json();
+                }
+
+                const message = await extractErrorMessage(response, "Sipariş güncellenemedi");
+                lastError = new Error(message);
+            } catch (error) {
+                lastError = error;
+            }
         }
-        return await response.json();
+
+        throw lastError || new Error("Sipariş güncellenemedi");
     },
 
     async getUsers() {
-        const response = await fetch(`${API_URL}/users`, { cache: "no-store", headers: { ...API.getAuthHeaders() } });
-        if (!response.ok) {
-            const message = await extractErrorMessage(response, "Kullanıcılar yüklenemedi");
-            throw new Error(message);
+        let lastError = null;
+        for (const baseUrl of getApiBaseCandidates()) {
+            try {
+                const response = await fetch(`${baseUrl}/users`, { cache: "no-store", headers: { ...API.getAuthHeaders() } });
+                if (response.ok) {
+                    rememberApiBase(baseUrl);
+                    return await response.json();
+                }
+
+                const message = await extractErrorMessage(response, "Kullanıcılar yüklenemedi");
+                lastError = new Error(message);
+            } catch (error) {
+                lastError = error;
+            }
         }
-        return await response.json();
+
+        throw lastError || new Error("Kullanıcılar yüklenemedi");
     },
 
     // --- KULLANICI & GİRİŞ İŞLEMLERİ ---
@@ -195,16 +319,28 @@ const API = {
         const email = typeof emailOrData === 'object' ? emailOrData?.email : emailOrData;
         const pass = typeof emailOrData === 'object' ? emailOrData?.pass : passArg;
 
-        const response = await fetch(`${API_URL}/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, pass })
-        });
-        if (!response.ok) {
-            const message = await extractErrorMessage(response, "Giriş başarısız");
-            throw new Error(message);
+        let lastError = null;
+        for (const baseUrl of getApiBaseCandidates()) {
+            try {
+                const response = await fetch(`${baseUrl}/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, pass })
+                });
+
+                if (response.ok) {
+                    rememberApiBase(baseUrl);
+                    return await response.json();
+                }
+
+                const message = await extractErrorMessage(response, "Giriş başarısız");
+                lastError = new Error(message);
+            } catch (error) {
+                lastError = error;
+            }
         }
-        return await response.json();
+
+        throw lastError || new Error("Giriş başarısız");
     },
 
     async register(userData) {
