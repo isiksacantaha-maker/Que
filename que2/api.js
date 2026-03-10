@@ -5,6 +5,13 @@ const API_URL = (
     ? "http://localhost:3000/api"
     : "https://que-7pcg.onrender.com/api";
 
+const API_URL_FALLBACKS = (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+)
+    ? ["http://localhost:3000/api", "https://que-7pcg.onrender.com/api"]
+    : ["/api", "https://que-7pcg.onrender.com/api"];
+
 async function extractErrorMessage(response, fallbackMessage) {
     let backendMessage = "";
 
@@ -44,9 +51,34 @@ const API = {
 
     // Tüm ürünleri getir
     async getProducts() {
-        const response = await fetch(`${API_URL}/products`, { cache: "no-store" });
-        if (!response.ok) throw new Error("Ürünler yüklenemedi");
-        return await response.json();
+        let lastError = null;
+
+        for (const baseUrl of API_URL_FALLBACKS) {
+            try {
+                const response = await fetch(`${baseUrl}/products`, { cache: "no-store" });
+
+                if (response.ok) return await response.json();
+
+                // Bazı eski kurulumlarda ürün endpoint'i token isteyebildiği için ikinci şans ver.
+                if ((response.status === 401 || response.status === 403) && sessionStorage.getItem('authToken')) {
+                    const retryWithAuth = await fetch(`${baseUrl}/products`, {
+                        cache: "no-store",
+                        headers: { ...API.getAuthHeaders() }
+                    });
+                    if (retryWithAuth.ok) return await retryWithAuth.json();
+                    const retryMessage = await extractErrorMessage(retryWithAuth, "Ürünler yüklenemedi");
+                    lastError = new Error(retryMessage);
+                    continue;
+                }
+
+                const message = await extractErrorMessage(response, "Ürünler yüklenemedi");
+                lastError = new Error(message);
+            } catch (error) {
+                lastError = error;
+            }
+        }
+
+        throw lastError || new Error("Ürünler yüklenemedi");
     },
 
     // Ürün Kaydet (Hem Yeni Ekleme Hem Güncelleme)

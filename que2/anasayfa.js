@@ -79,7 +79,13 @@ async function loadFeaturedProducts() {
     if (!productGrid) return;
 
     let allProducts = [];
-    allProducts = await API.getProducts();
+    try {
+        allProducts = await API.getProducts();
+    } catch (error) {
+        console.error('Öne çıkan ürünler yüklenemedi:', error);
+        productGrid.innerHTML = '<p style="grid-column: span 3; text-align: center; color: #999;">Ürünler şu anda yüklenemiyor. Lütfen kısa süre sonra tekrar deneyiniz.</p>';
+        return;
+    }
     
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
     // Yeni eklenen ürünler önde olacak şekilde son 6 ürünü göster
