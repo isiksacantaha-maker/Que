@@ -11,6 +11,24 @@ document.addEventListener('DOMContentLoaded', () => {
     initVideoScroll();
 });
 
+function getProductImages(product) {
+    const images = Array.isArray(product?.imgs)
+        ? product.imgs.filter(src => typeof src === 'string' && src.trim())
+        : [];
+    const first = images[0] || 'placeholder.jpg';
+    return {
+        card: [first, images[1] || first, images[2] || first],
+        gallery: images.length ? images : [first]
+    };
+}
+
+function formatProductPrice(price) {
+    const value = Number(price);
+    return Number.isFinite(value)
+        ? `${value.toLocaleString('tr-TR')} TL`
+        : 'Fiyat bilgisi yok';
+}
+
 /* ==========================================================================
    2. VIDEO SCROLL KONTROLÜ (GÜNCELLENDİ)
    ========================================================================== */
@@ -98,6 +116,8 @@ async function loadFeaturedProducts() {
 
     productGrid.innerHTML = featuredProducts.map((p, index) => {
         const isFav = wishlist.includes(p._id);
+        const images = getProductImages(p);
+        const productName = p.name || 'Isimsiz Urun';
         
         return `
             <div class="product-card" 
@@ -115,14 +135,14 @@ async function loadFeaturedProducts() {
                 </div>
 
                 <div class="image-slider">
-                    <img src="${p.imgs[0]}" class="p-img active">
-                    <img src="${p.imgs[1] || p.imgs[0]}" class="p-img">
-                    <img src="${p.imgs[2] || p.imgs[0]}" class="p-img">
+                    <img src="${images.card[0]}" class="p-img active">
+                    <img src="${images.card[1]}" class="p-img">
+                    <img src="${images.card[2]}" class="p-img">
                 </div>
 
                 <div class="product-info">
-                    <h3>${p.name}</h3>
-                    <div class="price">${p.price.toLocaleString('tr-TR')} TL</div>
+                    <h3>${productName}</h3>
+                    <div class="price">${formatProductPrice(p.price)}</div>
                 </div>
             </div>
         `;
@@ -170,9 +190,10 @@ async function openDetailModal(id) {
     const content = document.getElementById('detail-content');
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
     const isFav = wishlist.includes(p._id);
+    const images = getProductImages(p);
 
     currentGalleryIndex = 0;
-    currentGalleryImages = p.imgs;
+    currentGalleryImages = images.gallery;
 
     content.innerHTML = `
         <div class="gallery-container">
@@ -182,7 +203,7 @@ async function openDetailModal(id) {
 
             <div class="detail-gallery">
                 <div class="main-img-wrapper">
-                    <img src="${currentGalleryImages[0]}" id="mainDetailImg" class="main-detail-img" alt="Ürün Resmi">
+                    <img src="${currentGalleryImages[0]}" id="mainDetailImg" class="main-detail-img" alt="Urun Resmi">
                     
                     <button class="gallery-nav-btn gallery-prev" onclick="prevGalleryImage()">
                         <i class="fas fa-chevron-left"></i>
@@ -202,9 +223,9 @@ async function openDetailModal(id) {
 
             <div class="detail-info">
                 <span class="category">${p.category || 'ÖZEL TASARIM'}</span>
-                <h2>${p.name}</h2>
+                <h2>${p.name || 'Isimsiz Urun'}</h2>
                 <p class="desc">${p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.'}</p>
-                <div class="price-display">${p.price.toLocaleString('tr-TR')} TL</div>
+                <div class="price-display">${formatProductPrice(p.price)}</div>
 
                 <div class="detail-buttons">
                     <button onclick="toggleWishlistDetail('${p._id}')" class="action-btn-main btn-fav ${isFav ? 'active' : ''}">

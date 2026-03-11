@@ -48,6 +48,7 @@ function readProductCache() {
         const products = parsed?.products;
 
         if (!Array.isArray(products) || !timestamp) return null;
+        if (products.length === 0) return null;
         if (Date.now() - timestamp > PRODUCT_CACHE_TTL_MS) return null;
 
         return products;
@@ -59,6 +60,10 @@ function readProductCache() {
 function writeProductCache(products) {
     try {
         if (!Array.isArray(products)) return;
+        if (products.length === 0) {
+            localStorage.removeItem(PRODUCT_CACHE_STORAGE_KEY);
+            return;
+        }
         localStorage.setItem(PRODUCT_CACHE_STORAGE_KEY, JSON.stringify({
             timestamp: Date.now(),
             products

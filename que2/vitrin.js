@@ -73,6 +73,8 @@ async function renderProducts(filterData = null) {
 
     list.innerHTML = displayData.map((p, index) => {
         const isFav = wishlist.includes(p._id);
+        const images = getProductImages(p);
+        const productName = p.name || 'Isimsiz Urun';
         
         // Admin Üç Nokta (Düzenle)
         const adminTrigger = (isAdmin && !isEditMode) ? 
@@ -109,14 +111,14 @@ async function renderProducts(filterData = null) {
                 </div>
 
                 <div class="image-slider">
-                    <img src="${p.imgs && p.imgs[0] ? p.imgs[0] : 'placeholder.jpg'}" class="p-img active">
-                    <img src="${p.imgs && p.imgs[1] ? p.imgs[1] : (p.imgs && p.imgs[0] ? p.imgs[0] : 'placeholder.jpg')}" class="p-img">
-                    <img src="${p.imgs && p.imgs[2] ? p.imgs[2] : (p.imgs && p.imgs[0] ? p.imgs[0] : 'placeholder.jpg')}" class="p-img">
+                    <img src="${images.card[0]}" class="p-img active">
+                    <img src="${images.card[1]}" class="p-img">
+                    <img src="${images.card[2]}" class="p-img">
                 </div>
 
                 <div class="product-info">
-                    <h3>${p.name}</h3>
-                    <div class="price">${p.price.toLocaleString('tr-TR')} TL</div>
+                    <h3>${productName}</h3>
+                    <div class="price">${formatProductPrice(p.price)}</div>
                 </div>
             </div>`;
     }).join('');
@@ -187,9 +189,10 @@ async function openDetailModal(id) {
     const content = document.getElementById('detail-content');
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
     const isFav = wishlist.includes(p._id);
+    const images = getProductImages(p);
 
     currentGalleryIndex = 0;
-    currentGalleryImages = p.imgs;
+    currentGalleryImages = images.gallery;
 
     content.innerHTML = `
         <div class="gallery-container">
@@ -199,7 +202,7 @@ async function openDetailModal(id) {
 
             <div class="detail-gallery">
                 <div class="main-img-wrapper">
-                    <img src="${p.imgs[0]}" id="mainDetailImg" class="main-detail-img" alt="Ürün Resmi">
+                    <img src="${images.gallery[0]}" id="mainDetailImg" class="main-detail-img" alt="Urun Resmi">
                     
                     <button class="gallery-nav-btn gallery-prev" onclick="prevGalleryImage()">
                         <i class="fas fa-chevron-left"></i>
@@ -210,7 +213,7 @@ async function openDetailModal(id) {
                 </div>
 
                 <div class="thumb-strip">
-                    ${p.imgs.map((img, idx) => `
+                    ${images.gallery.map((img, idx) => `
                         <img src="${img}" class="thumb-img ${idx === 0 ? 'active' : ''}" 
                              onclick="selectGalleryImage(${idx})" alt="Resim ${idx + 1}">
                     `).join('')}
@@ -219,9 +222,9 @@ async function openDetailModal(id) {
 
             <div class="detail-info">
                 <span class="category">${p.category || 'ÖZEL TASARIM'}</span>
-                <h2>${p.name}</h2>
+                <h2>${p.name || 'Isimsiz Urun'}</h2>
                 <p class="desc">${p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.'}</p>
-                <div class="price-display">${p.price.toLocaleString('tr-TR')} TL</div>
+                <div class="price-display">${formatProductPrice(p.price)}</div>
 
                 <div class="detail-buttons">
                     <button onclick="toggleWishlistDetail('${p._id}')" class="action-btn-main btn-fav ${isFav ? 'active' : ''}">
@@ -840,4 +843,20 @@ function resetProductHover(card) {
     const images = card.querySelectorAll('.p-img');
     if (!images.length) return;
     images.forEach((img, i) => img.classList.toggle('active', i === 0));
+}
+
+function formatProductPrice(price) {
+    const value = Number(price);
+    return Number.isFinite(value) ? `${value.toLocaleString('tr-TR')} TL` : 'Fiyat bilgisi yok';
+}
+
+function getProductImages(product) {
+    const images = Array.isArray(product?.imgs)
+        ? product.imgs.filter(src => typeof src === 'string' && src.trim())
+        : [];
+    const first = images[0] || 'placeholder.jpg';
+    return {
+        card: [first, images[1] || first, images[2] || first],
+        gallery: images.length ? images : [first]
+    };
 }
