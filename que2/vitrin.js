@@ -11,6 +11,8 @@ const MAX_IMAGE_DIMENSION = 1400;
 const JPEG_QUALITY = 0.75;
 const MAX_PAYLOAD_BYTES = 23 * 1024 * 1024;
 const MIN_IMAGE_COUNT = 3;
+const PRODUCT_LIST_RETRY_DELAY_MS = 3500;
+let productListRetryTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -51,12 +53,18 @@ async function renderProducts(filterData = null) {
     const list = document.getElementById('product-list');
     if (!list) return;
 
+    if (productListRetryTimer) {
+        clearTimeout(productListRetryTimer);
+        productListRetryTimer = null;
+    }
+
     let allProducts = [];
     try {
         allProducts = await API.getProducts();
     } catch (error) {
         console.error("Ürünler yüklenemedi:", error);
-        list.innerHTML = '<p style="grid-column: span 3; text-align: center; color: red;">Sunucu bağlantı hatası. Lütfen daha sonra tekrar deneyiniz.</p>';
+        list.innerHTML = '<p style="grid-column: span 3; text-align: center; color: red;">Sunucu bağlantısı kurulamadı. Yeniden deneniyor...</p>';
+        productListRetryTimer = setTimeout(() => renderProducts(filterData), PRODUCT_LIST_RETRY_DELAY_MS);
         return;
     }
 

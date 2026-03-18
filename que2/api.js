@@ -15,9 +15,9 @@ const API_URL_FALLBACKS = (
 const API_BASE_STORAGE_KEY = 'que_api_base';
 const PRODUCT_CACHE_STORAGE_KEY = 'que_products_cache_v1';
 const PRODUCT_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 saat
-const PRODUCT_REQUEST_TIMEOUT_MS = 5000;
-const PRODUCT_RETRY_COUNT = 1;
-const PRODUCT_RETRY_BACKOFF_MS = 250;
+const PRODUCT_REQUEST_TIMEOUT_MS = 15000;
+const PRODUCT_RETRY_COUNT = 2;
+const PRODUCT_RETRY_BACKOFF_MS = 500;
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -38,7 +38,9 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = PRODUCT_REQUEST_T
     }
 }
 
-function readProductCache() {
+function readProductCache(options = {}) {
+    const allowExpired = Boolean(options.allowExpired);
+
     try {
         const raw = localStorage.getItem(PRODUCT_CACHE_STORAGE_KEY);
         if (!raw) return null;
@@ -49,7 +51,7 @@ function readProductCache() {
 
         if (!Array.isArray(products) || !timestamp) return null;
         if (products.length === 0) return null;
-        if (Date.now() - timestamp > PRODUCT_CACHE_TTL_MS) return null;
+        if (!allowExpired && Date.now() - timestamp > PRODUCT_CACHE_TTL_MS) return null;
 
         return products;
     } catch (_) {
@@ -136,26 +138,40 @@ async function fetchProductsFromBase(baseUrl) {
 
 async function fetchAndMergeProductsFromSources() {
     let lastError = null;
-    let hasLiveSource = false;
     const mergedProducts = [];
     const seenKeys = new Set();
 
-    for (const baseUrl of getApiBaseCandidates()) {
+    const candidateBases = getApiBaseCandidates();
+    const settled = await Promise.all(candidateBases.map(async (baseUrl) => {
         try {
             const products = await fetchProductsFromBase(baseUrl);
-            rememberApiBase(baseUrl);
-            hasLiveSource = true;
-
-            products.forEach(product => {
-                const key = buildProductMergeKey(product);
-                if (!seenKeys.has(key)) {
-                    seenKeys.add(key);
-                    mergedProducts.push(product);
-                }
-            });
+            return { baseUrl, products, error: null };
         } catch (error) {
-            lastError = error;
+            return { baseUrl, products: null, error };
         }
+    }));
+
+    const successfulResults = settled.filter(result => Array.isArray(result.products));
+    const hasLiveSource = successfulResults.length > 0;
+
+    successfulResults.forEach(result => {
+        result.products.forEach(product => {
+            const key = buildProductMergeKey(product);
+            if (!seenKeys.has(key)) {
+                seenKeys.add(key);
+                mergedProducts.push(product);
+            }
+        });
+    });
+
+    const preferredSource = successfulResults.find(result => result.products.length > 0) || successfulResults[0];
+    if (preferredSource) {
+        rememberApiBase(preferredSource.baseUrl);
+    }
+
+    const failedResults = settled.filter(result => result.error);
+    if (failedResults.length > 0) {
+        lastError = failedResults[failedResults.length - 1].error;
     }
 
     return { mergedProducts, hasLiveSource, lastError };
@@ -231,6 +247,8 @@ const API = {
     // Tüm ürünleri getir
     async getProducts() {
         const cachedProducts = readProductCache();
+        const staleProducts = readProductCache({ allowExpired: true });
+
         if (cachedProducts) {
             fetchAndMergeProductsFromSources()
                 .then(result => {
@@ -251,6 +269,10 @@ const API = {
         if (liveResult.mergedProducts.length > 0) {
             writeProductCache(liveResult.mergedProducts);
             return liveResult.mergedProducts;
+        }
+
+        if (staleProducts) {
+            return staleProducts;
         }
 
         if (liveResult.hasLiveSource) {

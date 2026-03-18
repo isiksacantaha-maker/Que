@@ -3,6 +3,8 @@
    ========================================================================== */
 let currentGalleryIndex = 0;
 let currentGalleryImages = [];
+const FEATURED_RETRY_DELAY_MS = 3500;
+let featuredRetryTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("📱 Que Jewelry Anasayfa Motoru Çalıştırıldı");
@@ -96,12 +98,18 @@ async function loadFeaturedProducts() {
     const productGrid = document.getElementById('featured-products');
     if (!productGrid) return;
 
+    if (featuredRetryTimer) {
+        clearTimeout(featuredRetryTimer);
+        featuredRetryTimer = null;
+    }
+
     let allProducts = [];
     try {
         allProducts = await API.getProducts();
     } catch (error) {
         console.error('Öne çıkan ürünler yüklenemedi:', error);
-        productGrid.innerHTML = '<p style="grid-column: span 3; text-align: center; color: #999;">Ürünler şu anda yüklenemiyor. Lütfen kısa süre sonra tekrar deneyiniz.</p>';
+        productGrid.innerHTML = '<p style="grid-column: span 3; text-align: center; color: #999;">Ürünler şu anda yüklenemiyor. Bağlantı yeniden deneniyor...</p>';
+        featuredRetryTimer = setTimeout(() => loadFeaturedProducts(), FEATURED_RETRY_DELAY_MS);
         return;
     }
     
