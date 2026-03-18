@@ -4,7 +4,11 @@
 let currentGalleryIndex = 0;
 let currentGalleryImages = [];
 const FEATURED_RETRY_DELAY_MS = 3500;
+const FEATURED_SKELETON_COUNT = 6;
+const FEATURED_EVENT_REFRESH_GAP_MS = 1200;
 let featuredRetryTimer = null;
+let lastFeaturedEventRefreshAt = 0;
+let featuredRenderRequestId = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("📱 Que Jewelry Anasayfa Motoru Çalıştırıldı");
@@ -12,7 +16,35 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartCount();
     initVideoScroll();
     window.addEventListener('online', loadFeaturedProducts);
+    window.addEventListener('que:products-updated', handleProductsUpdatedEvent);
 });
+
+function renderFeaturedSkeleton() {
+    const productGrid = document.getElementById('featured-products');
+    if (!productGrid) return;
+
+    productGrid.innerHTML = Array.from({ length: FEATURED_SKELETON_COUNT }).map(() => `
+        <div class="product-card product-skeleton" aria-hidden="true">
+            <div class="image-slider skeleton-block"></div>
+            <div class="product-info">
+                <div class="skeleton-line skeleton-line-title"></div>
+                <div class="skeleton-line skeleton-line-price"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function handleProductsUpdatedEvent() {
+    const now = Date.now();
+    if (now - lastFeaturedEventRefreshAt < FEATURED_EVENT_REFRESH_GAP_MS) return;
+    lastFeaturedEventRefreshAt = now;
+
+    loadFeaturedProducts();
+}
+
+function retryFeaturedProducts() {
+    loadFeaturedProducts();
+}
 
 function getProductImages(product) {
     const images = Array.isArray(product?.imgs)
@@ -98,21 +130,34 @@ function initVideoScroll() {
 async function loadFeaturedProducts() {
     const productGrid = document.getElementById('featured-products');
     if (!productGrid) return;
+    const requestId = ++featuredRenderRequestId;
 
     if (featuredRetryTimer) {
         clearTimeout(featuredRetryTimer);
         featuredRetryTimer = null;
     }
 
+    if (!productGrid.children.length) {
+        renderFeaturedSkeleton();
+    }
+
     let allProducts = [];
     try {
         allProducts = await API.getProducts();
     } catch (error) {
+        if (requestId !== featuredRenderRequestId) return;
         console.error('Öne çıkan ürünler yüklenemedi:', error);
-        productGrid.innerHTML = '<p style="grid-column: span 3; text-align: center; color: #999;">Ürünler şu anda yüklenemiyor. Bağlantı yeniden deneniyor...</p>';
+        productGrid.innerHTML = `
+            <div class="load-error-box">
+                <p>Ürünler şu anda yüklenemiyor. Bağlantı yeniden deneniyor...</p>
+                <button class="retry-load-btn" onclick="retryFeaturedProducts()">Tekrar Dene</button>
+            </div>
+        `;
         featuredRetryTimer = setTimeout(() => loadFeaturedProducts(), FEATURED_RETRY_DELAY_MS);
         return;
     }
+
+    if (requestId !== featuredRenderRequestId) return;
     
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
     // Yeni eklenen ürünler önde olacak şekilde son 6 ürünü göster
@@ -127,6 +172,9 @@ async function loadFeaturedProducts() {
         const isFav = wishlist.includes(p._id);
         const images = getProductImages(p);
         const productName = p.name || 'Isimsiz Urun';
+        const shouldPrioritize = index < 2;
+        const loadingMode = shouldPrioritize ? 'eager' : 'lazy';
+        const fetchPriority = shouldPrioritize ? 'high' : 'low';
         
         return `
             <div class="product-card" 
@@ -144,9 +192,9 @@ async function loadFeaturedProducts() {
                 </div>
 
                 <div class="image-slider">
-                    <img src="${images.card[0]}" class="p-img active">
-                    <img src="${images.card[1]}" class="p-img">
-                    <img src="${images.card[2]}" class="p-img">
+                    <img src="${images.card[0]}" class="p-img active" alt="${productName} 1" loading="${loadingMode}" decoding="async" fetchpriority="${fetchPriority}">
+                    <img src="${images.card[1]}" class="p-img" alt="${productName} 2" loading="lazy" decoding="async" fetchpriority="low">
+                    <img src="${images.card[2]}" class="p-img" alt="${productName} 3" loading="lazy" decoding="async" fetchpriority="low">
                 </div>
 
                 <div class="product-info">
@@ -157,6 +205,8 @@ async function loadFeaturedProducts() {
         `;
     }).join('');
 }
+
+window.retryFeaturedProducts = retryFeaturedProducts;
 
 /* ==========================================================================
    4. SEPET VE FAVORİ MANTIĞI

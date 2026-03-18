@@ -12,7 +12,11 @@ const JPEG_QUALITY = 0.75;
 const MAX_PAYLOAD_BYTES = 23 * 1024 * 1024;
 const MIN_IMAGE_COUNT = 3;
 const PRODUCT_LIST_RETRY_DELAY_MS = 3500;
+const PRODUCT_LIST_SKELETON_COUNT = 9;
+const PRODUCT_EVENT_REFRESH_GAP_MS = 1200;
 let productListRetryTimer = null;
+let lastProductEventRefreshAt = 0;
+let productRenderRequestId = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -20,7 +24,35 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAddDropZone();
     updateCartCount();
     window.addEventListener('online', () => renderProducts());
+    window.addEventListener('que:products-updated', handleProductsUpdatedEvent);
 });
+
+function renderProductListSkeleton() {
+    const list = document.getElementById('product-list');
+    if (!list) return;
+
+    list.innerHTML = Array.from({ length: PRODUCT_LIST_SKELETON_COUNT }).map(() => `
+        <div class="product-card product-skeleton" aria-hidden="true">
+            <div class="image-slider skeleton-block"></div>
+            <div class="product-info">
+                <div class="skeleton-line skeleton-line-title"></div>
+                <div class="skeleton-line skeleton-line-price"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function handleProductsUpdatedEvent() {
+    const now = Date.now();
+    if (now - lastProductEventRefreshAt < PRODUCT_EVENT_REFRESH_GAP_MS) return;
+    lastProductEventRefreshAt = now;
+
+    renderProducts();
+}
+
+function retryCollectionLoad() {
+    renderProducts();
+}
 
 function initApp() {
     console.log("VİTRİN BAŞLATILDI");
@@ -53,27 +85,41 @@ function checkAdminAccess() {
 async function renderProducts(filterData = null) {
     const list = document.getElementById('product-list');
     if (!list) return;
+    const requestId = ++productRenderRequestId;
+    const hasFilterData = Array.isArray(filterData);
 
     if (productListRetryTimer) {
         clearTimeout(productListRetryTimer);
         productListRetryTimer = null;
     }
 
-    let allProducts = [];
-    try {
-        allProducts = await API.getProducts();
-    } catch (error) {
-        console.error("Ürünler yüklenemedi:", error);
-        list.innerHTML = '<p style="grid-column: span 3; text-align: center; color: red;">Sunucu bağlantısı kurulamadı. Yeniden deneniyor...</p>';
-        productListRetryTimer = setTimeout(() => renderProducts(filterData), PRODUCT_LIST_RETRY_DELAY_MS);
-        return;
+    if (!list.children.length && !hasFilterData) {
+        renderProductListSkeleton();
     }
+
+    let displayData = filterData;
+    if (!hasFilterData) {
+        try {
+            displayData = await API.getProducts();
+        } catch (error) {
+            if (requestId !== productRenderRequestId) return;
+            console.error("Ürünler yüklenemedi:", error);
+            list.innerHTML = `
+                <div class="load-error-box">
+                    <p>Sunucu bağlantısı kurulamadı. Yeniden deneniyor...</p>
+                    <button class="retry-load-btn" onclick="retryCollectionLoad()">Tekrar Dene</button>
+                </div>
+            `;
+            productListRetryTimer = setTimeout(() => renderProducts(), PRODUCT_LIST_RETRY_DELAY_MS);
+            return;
+        }
+    }
+
+    if (requestId !== productRenderRequestId) return;
 
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
     const role = sessionStorage.getItem('userRole');
     const isAdmin = role === 'admin' || role === 'developer';
-    
-    const displayData = filterData || allProducts;
     
     if (!Array.isArray(displayData) || displayData.length === 0) {
         list.innerHTML = '<p style="grid-column: span 3; text-align: center; color: #999;">Listelenecek ürün bulunamadı.</p>';
@@ -84,6 +130,9 @@ async function renderProducts(filterData = null) {
         const isFav = wishlist.includes(p._id);
         const images = getProductImages(p);
         const productName = p.name || 'Isimsiz Urun';
+        const shouldPrioritize = index < 6;
+        const loadingMode = shouldPrioritize ? 'eager' : 'lazy';
+        const fetchPriority = shouldPrioritize ? 'high' : 'low';
         
         // Admin Üç Nokta (Düzenle)
         const adminTrigger = (isAdmin && !isEditMode) ? 
@@ -120,9 +169,9 @@ async function renderProducts(filterData = null) {
                 </div>
 
                 <div class="image-slider">
-                    <img src="${images.card[0]}" class="p-img active">
-                    <img src="${images.card[1]}" class="p-img">
-                    <img src="${images.card[2]}" class="p-img">
+                    <img src="${images.card[0]}" class="p-img active" alt="${productName} 1" loading="${loadingMode}" decoding="async" fetchpriority="${fetchPriority}">
+                    <img src="${images.card[1]}" class="p-img" alt="${productName} 2" loading="lazy" decoding="async" fetchpriority="low">
+                    <img src="${images.card[2]}" class="p-img" alt="${productName} 3" loading="lazy" decoding="async" fetchpriority="low">
                 </div>
 
                 <div class="product-info">
@@ -132,6 +181,8 @@ async function renderProducts(filterData = null) {
             </div>`;
     }).join('');
 }
+
+window.retryCollectionLoad = retryCollectionLoad;
 
 /* ==========================================================================
    3. ADMİN MODU VE SIRALAMA (DRAG & DROP)

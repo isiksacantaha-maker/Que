@@ -1,6 +1,7 @@
 // SAYFA YÜKLENDİĞİNDE ÇALIŞTIR
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof updateCartCount === "function") updateCartCount();
+    initNetworkStatusBanner();
 
     // Ürün gösteren sayfalarda ilk render gecikmesini azaltmak için ön ısıtma.
     if (window.API && typeof API.getProducts === 'function') {
@@ -9,6 +10,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 0);
     }
 });
+
+function initNetworkStatusBanner() {
+    if (document.getElementById('network-status-banner')) return;
+
+    const style = document.createElement('style');
+    style.id = 'network-status-banner-style';
+    style.textContent = `
+        #network-status-banner {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120%);
+            z-index: 12000;
+            padding: 10px 18px;
+            border-radius: 999px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: .2px;
+            transition: transform .25s ease, opacity .25s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #network-status-banner.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        #network-status-banner.offline {
+            background: rgba(176, 0, 32, 0.95);
+        }
+
+        #network-status-banner.online {
+            background: rgba(22, 120, 64, 0.95);
+        }
+    `;
+
+    const banner = document.createElement('div');
+    banner.id = 'network-status-banner';
+
+    const show = (message, type, autoHideMs = 0) => {
+        banner.className = `${type} show`;
+        banner.textContent = message;
+
+        if (autoHideMs > 0) {
+            window.setTimeout(() => {
+                banner.classList.remove('show');
+            }, autoHideMs);
+        }
+    };
+
+    document.head.appendChild(style);
+    document.body.appendChild(banner);
+
+    window.addEventListener('offline', () => {
+        show('İnternet bağlantısı kesildi. Ürünler yeniden denenecek.', 'offline');
+    });
+
+    window.addEventListener('online', () => {
+        show('Bağlantı geri geldi. Ürünler güncelleniyor...', 'online', 2500);
+    });
+}
 
 
 /* ==========================================================================

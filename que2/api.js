@@ -19,9 +19,36 @@ const PRODUCT_REQUEST_TIMEOUT_MS = 15000;
 const PRODUCT_RETRY_COUNT = 2;
 const PRODUCT_RETRY_BACKOFF_MS = 500;
 const PRODUCT_BACKGROUND_SYNC_DEBOUNCE_MS = 2000;
+const PRODUCT_METRICS_STORAGE_KEY = 'que_products_metrics_v1';
+const PRODUCT_METRICS_LIMIT = 20;
 
 let productsInFlightPromise = null;
 let lastBackgroundSyncAt = 0;
+
+function recordProductFetchMetric({ baseUrl, status, durationMs, count, errorMessage }) {
+    try {
+        const raw = sessionStorage.getItem(PRODUCT_METRICS_STORAGE_KEY);
+        const current = raw ? JSON.parse(raw) : [];
+        const list = Array.isArray(current) ? current : [];
+
+        list.push({
+            ts: Date.now(),
+            baseUrl,
+            status,
+            durationMs: Math.round(durationMs),
+            count: Number.isFinite(count) ? count : null,
+            errorMessage: errorMessage || null
+        });
+
+        while (list.length > PRODUCT_METRICS_LIMIT) {
+            list.shift();
+        }
+
+        sessionStorage.setItem(PRODUCT_METRICS_STORAGE_KEY, JSON.stringify(list));
+    } catch (_) {
+        // sessionStorage bazı tarayıcı modlarında kısıtlı olabilir.
+    }
+}
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -103,12 +130,21 @@ async function fetchProductsFromBase(baseUrl) {
     let lastError = null;
 
     for (let attempt = 0; attempt <= PRODUCT_RETRY_COUNT; attempt++) {
+        const startedAt = performance.now();
+
         try {
             const response = await fetchWithTimeout(`${baseUrl}/products`, { cache: "no-store" });
 
             if (response.ok) {
                 const products = await response.json();
-                return Array.isArray(products) ? products : [];
+                const safeProducts = Array.isArray(products) ? products : [];
+                recordProductFetchMetric({
+                    baseUrl,
+                    status: 'ok',
+                    durationMs: performance.now() - startedAt,
+                    count: safeProducts.length
+                });
+                return safeProducts;
             }
 
             if ((response.status === 401 || response.status === 403) && sessionStorage.getItem('authToken')) {
@@ -119,7 +155,14 @@ async function fetchProductsFromBase(baseUrl) {
 
                 if (retryWithAuth.ok) {
                     const products = await retryWithAuth.json();
-                    return Array.isArray(products) ? products : [];
+                    const safeProducts = Array.isArray(products) ? products : [];
+                    recordProductFetchMetric({
+                        baseUrl,
+                        status: 'ok-auth',
+                        durationMs: performance.now() - startedAt,
+                        count: safeProducts.length
+                    });
+                    return safeProducts;
                 }
 
                 const retryMessage = await extractErrorMessage(retryWithAuth, "Ürünler yüklenemedi");
@@ -147,6 +190,13 @@ async function fetchProductsFromBase(baseUrl) {
             lastError = isTimeout
                 ? new Error('Ürün isteği zaman aşımına uğradı')
                 : error;
+
+            recordProductFetchMetric({
+                baseUrl,
+                status: isTimeout ? 'timeout' : 'error',
+                durationMs: performance.now() - startedAt,
+                errorMessage: lastError?.message || 'Bilinmeyen hata'
+            });
 
             if (attempt < PRODUCT_RETRY_COUNT) {
                 await delay(PRODUCT_RETRY_BACKOFF_MS * (attempt + 1));
