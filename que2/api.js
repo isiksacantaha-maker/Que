@@ -18,6 +18,10 @@ const PRODUCT_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 saat
 const PRODUCT_REQUEST_TIMEOUT_MS = 15000;
 const PRODUCT_RETRY_COUNT = 2;
 const PRODUCT_RETRY_BACKOFF_MS = 500;
+const PRODUCT_BACKGROUND_SYNC_DEBOUNCE_MS = 2000;
+
+let productsInFlightPromise = null;
+let lastBackgroundSyncAt = 0;
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -73,6 +77,26 @@ function writeProductCache(products) {
     } catch (_) {
         // localStorage bazı tarayıcı modlarında kısıtlı olabilir.
     }
+}
+
+function clearProductCache() {
+    try {
+        localStorage.removeItem(PRODUCT_CACHE_STORAGE_KEY);
+    } catch (_) {
+        // localStorage bazı tarayıcı modlarında kısıtlı olabilir.
+    }
+}
+
+function notifyProductsUpdated(products, source = 'live') {
+    if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+
+    window.dispatchEvent(new CustomEvent('que:products-updated', {
+        detail: {
+            source,
+            count: Array.isArray(products) ? products.length : 0,
+            timestamp: Date.now()
+        }
+    }));
 }
 
 async function fetchProductsFromBase(baseUrl) {
@@ -177,6 +201,65 @@ async function fetchAndMergeProductsFromSources() {
     return { mergedProducts, hasLiveSource, lastError };
 }
 
+function shouldDebounceBackgroundSync() {
+    return Date.now() - lastBackgroundSyncAt < PRODUCT_BACKGROUND_SYNC_DEBOUNCE_MS;
+}
+
+function scheduleBackgroundProductSync() {
+    if (productsInFlightPromise || shouldDebounceBackgroundSync()) return;
+
+    lastBackgroundSyncAt = Date.now();
+    productsInFlightPromise = fetchAndMergeProductsFromSources()
+        .then(result => {
+            if (result.mergedProducts.length > 0) {
+                writeProductCache(result.mergedProducts);
+                notifyProductsUpdated(result.mergedProducts, 'background-sync');
+                return;
+            }
+
+            if (result.hasLiveSource) {
+                writeProductCache([]);
+                notifyProductsUpdated([], 'background-sync');
+            }
+        })
+        .catch(() => {})
+        .finally(() => {
+            productsInFlightPromise = null;
+        });
+}
+
+async function fetchProductsWithFallback(staleProducts) {
+    if (productsInFlightPromise) {
+        return productsInFlightPromise;
+    }
+
+    productsInFlightPromise = (async () => {
+        const liveResult = await fetchAndMergeProductsFromSources();
+
+        if (liveResult.mergedProducts.length > 0) {
+            writeProductCache(liveResult.mergedProducts);
+            notifyProductsUpdated(liveResult.mergedProducts, 'live-fetch');
+            return liveResult.mergedProducts;
+        }
+
+        if (staleProducts) {
+            return staleProducts;
+        }
+
+        if (liveResult.hasLiveSource) {
+            writeProductCache([]);
+            notifyProductsUpdated([], 'live-fetch');
+            return [];
+        }
+
+        throw liveResult.lastError || new Error("Ürünler yüklenemedi");
+    })().finally(() => {
+        productsInFlightPromise = null;
+    });
+
+    return productsInFlightPromise;
+}
+
 function uniqueApiBases(items) {
     const normalized = [];
     const seen = new Set();
@@ -250,37 +333,11 @@ const API = {
         const staleProducts = readProductCache({ allowExpired: true });
 
         if (cachedProducts) {
-            fetchAndMergeProductsFromSources()
-                .then(result => {
-                    if (result.mergedProducts.length > 0) {
-                        writeProductCache(result.mergedProducts);
-                        return;
-                    }
-                    if (result.hasLiveSource) {
-                        writeProductCache([]);
-                    }
-                })
-                .catch(() => {});
+            scheduleBackgroundProductSync();
             return cachedProducts;
         }
 
-        const liveResult = await fetchAndMergeProductsFromSources();
-
-        if (liveResult.mergedProducts.length > 0) {
-            writeProductCache(liveResult.mergedProducts);
-            return liveResult.mergedProducts;
-        }
-
-        if (staleProducts) {
-            return staleProducts;
-        }
-
-        if (liveResult.hasLiveSource) {
-            writeProductCache([]);
-            return [];
-        }
-
-        throw liveResult.lastError || new Error("Ürünler yüklenemedi");
+        return fetchProductsWithFallback(staleProducts);
     },
 
     // Ürün Kaydet (Hem Yeni Ekleme Hem Güncelleme)
@@ -308,6 +365,8 @@ const API = {
 
                 if (response.ok) {
                     rememberApiBase(baseUrl);
+                    clearProductCache();
+                    scheduleBackgroundProductSync();
                     return await response.json();
                 }
 
@@ -333,6 +392,8 @@ const API = {
 
                 if (response.ok) {
                     rememberApiBase(baseUrl);
+                    clearProductCache();
+                    scheduleBackgroundProductSync();
                     return await response.json();
                 }
 

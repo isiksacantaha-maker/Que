@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFeaturedProducts();
     updateCartCount();
     initVideoScroll();
+    window.addEventListener('online', loadFeaturedProducts);
 });
 
 function getProductImages(product) {

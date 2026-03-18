@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDropZone();
     setupAddDropZone();
     updateCartCount();
+    window.addEventListener('online', () => renderProducts());
 });
 
 function initApp() {

@@ -1,6 +1,13 @@
 // SAYFA YÜKLENDİĞİNDE ÇALIŞTIR
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof updateCartCount === "function") updateCartCount();
+
+    // Ürün gösteren sayfalarda ilk render gecikmesini azaltmak için ön ısıtma.
+    if (window.API && typeof API.getProducts === 'function') {
+        setTimeout(() => {
+            API.getProducts().catch(() => {});
+        }, 0);
+    }
 });
 
 
