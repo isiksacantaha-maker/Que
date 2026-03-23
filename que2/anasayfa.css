@@ -609,7 +609,7 @@
     .detail-overlay {
         padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
         box-sizing: border-box;
-        align-items: center !important;
+        align-items: flex-start !important;
         justify-content: center !important;
         overflow-y: auto;
     }
@@ -618,7 +618,7 @@
         width: 100%;
         max-width: 100%;
         max-height: calc(100vh - 20px);
-        margin: auto;
+        margin: 0 auto;
         border-radius: 18px;
         overflow-y: auto;
         overscroll-behavior: contain;

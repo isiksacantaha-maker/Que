@@ -53,9 +53,29 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFeaturedProducts();
     updateCartCount();
     initVideoScroll();
+    initDetailOverlayInteractions();
     window.addEventListener('online', loadFeaturedProducts);
     window.addEventListener('que:products-updated', handleProductsUpdatedEvent);
 });
+
+function initDetailOverlayInteractions() {
+    const overlay = document.getElementById('detail-overlay');
+    const content = document.getElementById('detail-content');
+    if (!overlay || !content || overlay.dataset.bound === '1') return;
+
+    overlay.dataset.bound = '1';
+
+    // Modal dışına ilk tık: kapat. Sonraki tıkta kullanıcı başka ürünü açabilir.
+    overlay.addEventListener('click', () => {
+        const zoomOverlay = document.getElementById('detail-image-zoom-overlay');
+        if (zoomOverlay && zoomOverlay.classList.contains('show')) return;
+        closeDetailModal();
+    });
+
+    content.addEventListener('click', (event) => {
+        event.stopPropagation();
+    });
+}
 
 function renderFeaturedSkeleton() {
     const productGrid = document.getElementById('featured-products');
@@ -485,8 +505,10 @@ function setupMobileFeaturedCardSwipe() {
         let moveX = 0;
         let moveY = 0;
         let trackSwipe = false;
-        const SWIPE_THRESHOLD = 35;
-        const HORIZONTAL_LOCK_THRESHOLD = 12;
+        let hasHorizontalIntent = false;
+        const SWIPE_THRESHOLD = 52;
+        const HORIZONTAL_LOCK_THRESHOLD = 16;
+        const VERTICAL_GUARD = 24;
 
         slider.addEventListener('touchstart', (event) => {
             if (!isMobileTouchViewport()) return;
@@ -500,6 +522,7 @@ function setupMobileFeaturedCardSwipe() {
             startY = touch.clientY;
             moveX = 0;
             moveY = 0;
+            hasHorizontalIntent = false;
             trackSwipe = true;
         }, { passive: true });
 
@@ -510,6 +533,7 @@ function setupMobileFeaturedCardSwipe() {
             moveY = touch.clientY - startY;
 
             if (Math.abs(moveX) > Math.abs(moveY) && Math.abs(moveX) > HORIZONTAL_LOCK_THRESHOLD) {
+                hasHorizontalIntent = true;
                 event.preventDefault();
             }
         }, { passive: false });
@@ -522,7 +546,9 @@ function setupMobileFeaturedCardSwipe() {
             const deltaX = touch.clientX - startX;
             const deltaY = touch.clientY - startY;
 
-            if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+            if (!hasHorizontalIntent) return;
+            if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+            if (Math.abs(deltaY) > VERTICAL_GUARD || Math.abs(deltaX) <= Math.abs(deltaY)) return;
 
             const images = card.querySelectorAll('.p-img');
             if (images.length < 2) return;
@@ -551,6 +577,7 @@ function setupMobileFeaturedCardSwipe() {
             trackSwipe = false;
             moveX = 0;
             moveY = 0;
+            hasHorizontalIntent = false;
         }, { passive: true });
     });
 }
