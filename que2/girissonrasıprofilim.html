@@ -167,6 +167,77 @@
         .whatsapp-btn {
             background: #25D366; color: #fff; border: none; padding: 12px 25px; border-radius: 50px; font-weight: bold; text-decoration: none; display: inline-block; margin: 15px 0;
         }
+
+        @media (max-width: 768px) {
+            body {
+                padding-top: 96px;
+            }
+
+            .profile-container {
+                margin: 0 10px;
+                padding: 16px;
+                border-radius: 16px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            }
+
+            h2 {
+                letter-spacing: 2px;
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+
+            .tabs {
+                gap: 8px;
+                margin-bottom: 18px;
+                overflow-x: auto;
+                justify-content: flex-start;
+                padding-bottom: 2px;
+            }
+
+            .tab-btn {
+                flex: 0 0 auto;
+                font-size: 11px;
+                letter-spacing: 0.4px;
+                padding-bottom: 10px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .full-width {
+                grid-column: span 1;
+            }
+
+            input,
+            textarea {
+                padding: 12px 14px;
+                border-radius: 14px;
+            }
+
+            .btn-gold {
+                width: 100%;
+                padding: 14px;
+                border-radius: 12px;
+                font-size: 13px;
+            }
+
+            .order-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 14px;
+                border-radius: 14px;
+            }
+
+            .return-box {
+                width: calc(100% - 24px);
+                box-sizing: border-box;
+                padding: 18px;
+                border-radius: 16px;
+            }
+        }
     </style>
 </head>
 

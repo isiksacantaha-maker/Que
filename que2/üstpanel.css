@@ -102,6 +102,13 @@ body {
     overflow-x: hidden;
 }
 
+img,
+video,
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
 /* NAVBAR (Sende eksik olan kısım) */
 .navbar {
     position: fixed;
@@ -239,6 +246,25 @@ body {
 
 /* TELEFONDA ÜST BAR TAŞMASINI ÖNLE */
 @media (max-width: 768px) {
+    html,
+    body {
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    .container,
+    .profile-container,
+    .checkout-wrapper,
+    .cart-container,
+    .auth-container,
+    .reset-container,
+    .detail-container,
+    .main-container {
+        width: min(100%, 100vw);
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
     .navbar {
         top: 8px;
         left: 10px;
@@ -275,5 +301,15 @@ body {
     .nav-right .cart-badge {
         top: -4px;
         right: -6px;
+    }
+
+    .profile-container,
+    .auth-container,
+    .reset-container {
+        margin-left: 10px !important;
+        margin-right: 10px !important;
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+        border-radius: 18px !important;
     }
 }

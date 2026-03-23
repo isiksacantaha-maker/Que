@@ -153,6 +153,74 @@
             background: #d4af37;
             color: #000;
         }
+
+        @media (max-width: 768px) {
+            body {
+                padding-top: 96px;
+            }
+
+            .container {
+                padding: 12px;
+            }
+
+            h2 {
+                letter-spacing: 2px;
+                margin-bottom: 22px;
+                font-size: 22px;
+            }
+
+            .wishlist-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+            }
+
+            .product-card {
+                border-radius: 14px;
+                padding: 10px;
+            }
+
+            .img-box {
+                height: 220px;
+                border-radius: 10px;
+                margin-bottom: 10px;
+            }
+
+            .remove-heart {
+                top: 14px;
+                right: 14px;
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+
+            .product-info h4 {
+                font-size: 14px;
+                margin: 6px 0 4px;
+                overflow-wrap: anywhere;
+            }
+
+            .product-info .price {
+                font-size: 14px;
+            }
+
+            .add-to-cart-small {
+                padding: 10px;
+                border-radius: 10px;
+                margin-top: 10px;
+                font-size: 11px;
+                letter-spacing: 0.6px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .wishlist-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .img-box {
+                height: 260px;
+            }
+        }
     </style>
 </head>
 

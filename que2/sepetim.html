@@ -67,6 +67,7 @@
             margin: 0 0 5px;
             font-weight: 500;
             font-size: 16px;
+            overflow-wrap: anywhere;
         }
 
         .item-info p {
@@ -81,6 +82,7 @@
             align-items: center;
             gap: 15px;
             margin-top: 10px;
+            flex-wrap: wrap;
         }
 
         .qty-btn {
@@ -172,6 +174,94 @@
         @media (max-width: 900px) {
             .cart-container {
                 grid-template-columns: 1fr;
+                gap: 18px;
+                padding: 14px;
+            }
+
+            h2 {
+                grid-column: span 1;
+                margin-bottom: 12px;
+                font-size: 22px;
+                letter-spacing: 2px;
+            }
+
+            .cart-summary {
+                position: static;
+                top: auto;
+                padding: 20px;
+            }
+
+            #empty-cart {
+                grid-column: span 1;
+                padding: 40px 0;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding-top: 94px;
+            }
+
+            .cart-container {
+                padding: 10px;
+            }
+
+            .cart-items {
+                border-radius: 14px;
+                padding: 12px;
+            }
+
+            .cart-item {
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px 0;
+            }
+
+            .item-img {
+                width: 76px;
+                height: 94px;
+                flex-shrink: 0;
+            }
+
+            .item-info h4 {
+                font-size: 14px;
+                margin-bottom: 4px;
+            }
+
+            .item-info p,
+            .remove-item {
+                font-size: 12px;
+            }
+
+            .item-price {
+                font-size: 15px;
+            }
+
+            .qty-control {
+                gap: 8px;
+                margin-top: 8px;
+            }
+
+            .qty-btn {
+                width: 28px;
+                height: 28px;
+                line-height: 1;
+            }
+
+            .cart-summary {
+                border-radius: 14px;
+                padding: 14px;
+            }
+
+            .total-row {
+                font-size: 16px;
+            }
+
+            .checkout-btn {
+                padding: 14px;
+                letter-spacing: 1px;
+                font-size: 13px;
+                border-radius: 12px;
             }
         }
     </style>

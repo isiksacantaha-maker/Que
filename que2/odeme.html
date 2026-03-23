@@ -241,8 +241,101 @@
         }
 
         @media (max-width: 850px) {
+            body {
+                padding-top: 96px;
+            }
+
             .checkout-wrapper {
                 grid-template-columns: 1fr;
+                padding: 12px;
+                gap: 16px;
+            }
+
+            .checkout-section {
+                padding: 20px;
+                border-radius: 16px;
+            }
+
+            #step1 .checkout-section {
+                max-width: 100%;
+            }
+
+            .step-indicator {
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 16px;
+            }
+
+            .step {
+                font-size: 11px;
+                gap: 6px;
+            }
+
+            .step-divider {
+                display: none;
+            }
+
+            .input-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .button-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .next-btn,
+            .pay-btn,
+            .back-btn {
+                padding: 14px;
+                font-size: 13px;
+                letter-spacing: 0.6px;
+            }
+
+            .total-pay {
+                font-size: 21px;
+                margin: 16px 0;
+            }
+
+            .whatsapp-box {
+                width: calc(100% - 24px);
+                padding: 20px;
+                border-radius: 16px;
+                box-sizing: border-box;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .checkout-wrapper {
+                padding: 10px;
+            }
+
+            .checkout-section {
+                padding: 14px;
+            }
+
+            h3 {
+                font-size: 14px;
+                letter-spacing: 1.2px;
+                margin-bottom: 16px;
+                padding-bottom: 10px;
+            }
+
+            .step-circle {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            input {
+                padding: 11px 12px;
+                font-size: 14px;
+            }
+
+            .whatsapp-btn {
+                width: 100%;
+                box-sizing: border-box;
             }
         }
     </style>
