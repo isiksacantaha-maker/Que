@@ -268,7 +268,155 @@ async function updateCartTotal() {
         document.getElementById('checkout-total').innerText = total.toLocaleString('tr-TR') + ' TL';
 }
 
-function proceedToPayment() {
+function ensureCheckoutModeModal() {
+    if (document.getElementById('checkout-mode-modal')) return;
+
+    const style = document.createElement('style');
+    style.id = 'checkout-mode-style';
+    style.textContent = `
+        .checkout-mode-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.48);
+            backdrop-filter: blur(4px);
+            z-index: 12000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .checkout-mode-modal.show {
+            display: flex;
+        }
+
+        .checkout-mode-box {
+            width: min(460px, 100%);
+            background: #fff;
+            border-radius: 18px;
+            padding: 22px;
+            box-sizing: border-box;
+            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.2);
+            color: #111;
+        }
+
+        .checkout-mode-title {
+            margin: 0 0 8px;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .checkout-mode-desc {
+            margin: 0 0 18px;
+            color: #666;
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        .checkout-mode-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .checkout-mode-btn {
+            border: 1px solid #ddd;
+            background: #fff;
+            color: #111;
+            border-radius: 12px;
+            padding: 13px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .checkout-mode-btn:hover {
+            border-color: #111;
+            transform: translateY(-1px);
+        }
+
+        .checkout-mode-btn.primary {
+            background: #111;
+            color: #fff;
+            border-color: #111;
+        }
+
+        .checkout-mode-btn.primary:hover {
+            background: #2a2a2a;
+            border-color: #2a2a2a;
+        }
+
+        .checkout-mode-cancel {
+            margin-top: 10px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+    `;
+
+    const modal = document.createElement('div');
+    modal.id = 'checkout-mode-modal';
+    modal.className = 'checkout-mode-modal';
+    modal.innerHTML = `
+        <div class="checkout-mode-box" id="checkout-mode-box">
+            <h3 class="checkout-mode-title">Ödemeye Nasıl Devam Etmek İstersiniz?</h3>
+            <p class="checkout-mode-desc">Üyelik girişi yaparak devam edebilir veya üye olmadan hızlıca siparişinizi tamamlayabilirsiniz.</p>
+            <div class="checkout-mode-actions">
+                <button type="button" class="checkout-mode-btn primary" data-checkout-choice="member">Üye Girişi Yap</button>
+                <button type="button" class="checkout-mode-btn" data-checkout-choice="guest">Üye Girişi Olmadan Devam Et</button>
+            </div>
+            <button type="button" class="checkout-mode-cancel" data-checkout-choice="cancel">Şimdilik Vazgeç</button>
+        </div>
+    `;
+
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+}
+
+function openCheckoutModeModal() {
+    ensureCheckoutModeModal();
+
+    const modal = document.getElementById('checkout-mode-modal');
+    const box = document.getElementById('checkout-mode-box');
+    if (!modal || !box) return Promise.resolve('cancel');
+
+    return new Promise((resolve) => {
+        const close = (choice) => {
+            modal.classList.remove('show');
+            modal.removeEventListener('click', handleOverlayClick);
+            box.removeEventListener('click', stopPropagation);
+            modal.querySelectorAll('[data-checkout-choice]').forEach(btn => {
+                btn.removeEventListener('click', handleChoice);
+            });
+            resolve(choice);
+        };
+
+        const stopPropagation = (event) => event.stopPropagation();
+        const handleOverlayClick = () => close('cancel');
+        const handleChoice = (event) => {
+            const choice = event.currentTarget.getAttribute('data-checkout-choice') || 'cancel';
+            close(choice);
+        };
+
+        modal.querySelectorAll('[data-checkout-choice]').forEach(btn => {
+            btn.addEventListener('click', handleChoice);
+        });
+
+        modal.addEventListener('click', handleOverlayClick);
+        box.addEventListener('click', stopPropagation);
+        modal.classList.add('show');
+    });
+}
+
+async function proceedToPayment() {
     const cart = JSON.parse(sessionStorage.getItem('que_cart')) || [];
     
     if (cart.length === 0) {
@@ -278,19 +426,21 @@ function proceedToPayment() {
 
     // Giriş kontrolü (Misafir devam seçeneği ile)
     if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-        const continueAsGuest = confirm(
-            'Ödemeye devam etmek için giriş yapabilirsiniz.\n\nTamam: Üye girişi yap\nİptal: Üye girişi yapmadan devam et'
-        );
+        const checkoutChoice = await openCheckoutModeModal();
 
-        if (continueAsGuest) {
+        if (checkoutChoice === 'member') {
             sessionStorage.setItem('checkout_mode', 'member');
             window.location.href = 'profilim.html';
             return;
         }
 
-        sessionStorage.setItem('checkout_mode', 'guest');
-        sessionStorage.removeItem('currentUserEmail');
-        window.location.href = 'odeme.html';
+        if (checkoutChoice === 'guest') {
+            sessionStorage.setItem('checkout_mode', 'guest');
+            sessionStorage.removeItem('currentUserEmail');
+            window.location.href = 'odeme.html';
+            return;
+        }
+
         return;
     }
 
