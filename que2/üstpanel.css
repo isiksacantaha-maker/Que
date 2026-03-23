@@ -106,7 +106,10 @@ body {
 .navbar {
     position: fixed;
     top: 0;
+    left: 0;
     width: 100%;
+    box-sizing: border-box;
+    align-items: center;
     display: flex;
     justify-content: space-between;
     padding: 20px 5%;
@@ -233,3 +236,44 @@ body {
 }
 
 .btn-delete:hover { background: #ff3b30; color: #ffffff; }
+
+/* TELEFONDA ÜST BAR TAŞMASINI ÖNLE */
+@media (max-width: 768px) {
+    .navbar {
+        top: 8px;
+        left: 10px;
+        width: calc(100% - 20px);
+        min-height: 48px;
+        height: auto !important;
+        padding: 8px 12px !important;
+        border-radius: 18px;
+        gap: 8px;
+    }
+
+    .nav-left {
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .nav-right {
+        gap: 10px !important;
+    }
+
+    .nav-link {
+        margin: 0;
+        letter-spacing: 0.2px;
+    }
+
+    .nav-left .nav-link {
+        font-size: 12px !important;
+    }
+
+    .nav-right .nav-link {
+        font-size: 18px !important;
+    }
+
+    .nav-right .cart-badge {
+        top: -4px;
+        right: -6px;
+    }
+}
