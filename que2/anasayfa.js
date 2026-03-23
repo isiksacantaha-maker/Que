@@ -362,7 +362,7 @@ async function openDetailModal(id) {
     attachGallerySwipe();
 
     overlay.style.display = 'flex';
-    document.body.style.overflow = 'hidden'; 
+    document.body.style.overflow = ''; 
 }
 
 function selectGalleryImage(idx) {
@@ -401,7 +401,7 @@ function toggleWishlistDetail(id) {
 function closeDetailModal() {
     document.getElementById('detail-overlay').style.display = 'none';
     closeImageZoom();
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = '';
 }
 
 function ensureImageZoomOverlay() {

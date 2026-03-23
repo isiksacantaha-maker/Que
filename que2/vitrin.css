@@ -1254,11 +1254,13 @@ body {
     }
     
     .gallery-close-btn {
-        top: 15px;
-        right: 15px;
+        position: fixed;
+        top: max(12px, calc(env(safe-area-inset-top) + 12px));
+        right: max(10px, calc(env(safe-area-inset-right) + 10px));
         width: 36px;
         height: 36px;
         font-size: 18px;
+        z-index: 12001;
     }
     
     .main-img-wrapper {
