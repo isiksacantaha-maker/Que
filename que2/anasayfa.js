@@ -3,6 +3,40 @@
    ========================================================================== */
 let currentGalleryIndex = 0;
 let currentGalleryImages = [];
+
+function attachGallerySwipe() {
+    const wrapper = document.querySelector('.main-img-wrapper');
+    if (!wrapper || wrapper.dataset.swipeBound === '1') return;
+
+    wrapper.dataset.swipeBound = '1';
+
+    let startX = 0;
+    let startY = 0;
+    const SWIPE_THRESHOLD = 40;
+    const MAX_VERTICAL_DRIFT = 60;
+
+    wrapper.addEventListener('touchstart', (event) => {
+        if (!currentGalleryImages || currentGalleryImages.length < 2) return;
+        const touch = event.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchend', (event) => {
+        if (!currentGalleryImages || currentGalleryImages.length < 2) return;
+        const touch = event.changedTouches[0];
+        const deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+
+        if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaY) > MAX_VERTICAL_DRIFT) return;
+
+        if (deltaX < 0) {
+            nextGalleryImage();
+        } else {
+            prevGalleryImage();
+        }
+    }, { passive: true });
+}
 const FEATURED_RETRY_DELAY_MS = 3500;
 const FEATURED_SKELETON_COUNT = 6;
 const FEATURED_EVENT_REFRESH_GAP_MS = 1200;
@@ -297,6 +331,8 @@ async function openDetailModal(id) {
             </div>
         </div>
     `;
+
+    attachGallerySwipe();
 
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden'; 
