@@ -5,7 +5,7 @@ let currentGalleryIndex = 0;
 let currentGalleryImages = [];
 
 function isMobileTouchViewport() {
-    return window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches;
+    return window.matchMedia('(max-width: 900px)').matches;
 }
 
 function attachGallerySwipe() {
@@ -302,7 +302,7 @@ async function openDetailModal(id) {
 
             <div class="detail-gallery">
                 <div class="main-img-wrapper">
-                    <img src="${currentGalleryImages[0]}" id="mainDetailImg" class="main-detail-img" alt="Urun Resmi">
+                    <img src="${currentGalleryImages[0]}" id="mainDetailImg" class="main-detail-img" alt="Urun Resmi" onclick="openImageZoom(currentGalleryIndex)">
                     
                     <button class="gallery-nav-btn gallery-prev" onclick="prevGalleryImage()">
                         <i class="fas fa-chevron-left"></i>
@@ -315,7 +315,7 @@ async function openDetailModal(id) {
                 <div class="thumb-strip">
                     ${currentGalleryImages.map((img, idx) => `
                         <img src="${img}" class="thumb-img ${idx === 0 ? 'active' : ''}" 
-                             onclick="selectGalleryImage(${idx})" alt="Resim ${idx + 1}">
+                             onclick="selectGalleryImage(${idx}); openImageZoom(${idx})" alt="Resim ${idx + 1}">
                     `).join('')}
                 </div>
             </div>
@@ -338,6 +338,7 @@ async function openDetailModal(id) {
         </div>
     `;
 
+    ensureImageZoomOverlay();
     attachGallerySwipe();
 
     overlay.style.display = 'flex';
@@ -379,7 +380,53 @@ function toggleWishlistDetail(id) {
 
 function closeDetailModal() {
     document.getElementById('detail-overlay').style.display = 'none';
+    closeImageZoom();
     document.body.style.overflow = 'auto';
+}
+
+function ensureImageZoomOverlay() {
+    if (document.getElementById('detail-image-zoom-overlay')) return;
+
+    const zoomOverlay = document.createElement('div');
+    zoomOverlay.id = 'detail-image-zoom-overlay';
+    zoomOverlay.className = 'detail-image-zoom-overlay';
+    zoomOverlay.innerHTML = `
+        <button class="zoom-close-btn" onclick="closeImageZoom()" aria-label="Kapat">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="detail-image-zoom-img" class="detail-image-zoom-img" alt="Tam Boyut Urun Gorseli">
+        <a id="detail-image-open-new" class="zoom-open-new" href="#" target="_blank" rel="noopener noreferrer">Yeni Sekmede Ac</a>
+    `;
+
+    zoomOverlay.addEventListener('click', (event) => {
+        if (event.target === zoomOverlay) closeImageZoom();
+    });
+
+    document.body.appendChild(zoomOverlay);
+}
+
+function openImageZoom(imageIndex) {
+    if (!Array.isArray(currentGalleryImages) || !currentGalleryImages.length) return;
+
+    const index = Number.isInteger(imageIndex)
+        ? Math.max(0, Math.min(currentGalleryImages.length - 1, imageIndex))
+        : currentGalleryIndex;
+    const src = currentGalleryImages[index] || currentGalleryImages[0];
+
+    const zoomOverlay = document.getElementById('detail-image-zoom-overlay');
+    const zoomImg = document.getElementById('detail-image-zoom-img');
+    const openNewLink = document.getElementById('detail-image-open-new');
+    if (!zoomOverlay || !zoomImg || !openNewLink) return;
+
+    zoomImg.src = src;
+    openNewLink.href = src;
+    zoomOverlay.classList.add('show');
+}
+
+function closeImageZoom() {
+    const zoomOverlay = document.getElementById('detail-image-zoom-overlay');
+    if (!zoomOverlay) return;
+    zoomOverlay.classList.remove('show');
 }
 
 function handleFeaturedCardTap(event, id) {
@@ -395,28 +442,53 @@ function handleFeaturedCardTap(event, id) {
     return false;
 }
 
-function setCardImageByIndex(card, index) {
+function setCardImageByIndex(card, index, swipeDirection = null) {
     const images = card.querySelectorAll('.p-img');
     if (!images.length) return;
+
+    let currentIndex = 0;
+    images.forEach((img, i) => {
+        if (img.classList.contains('active')) currentIndex = i;
+        img.classList.remove('swipe-enter-from-left', 'swipe-enter-from-right');
+    });
+
     const safeIndex = Math.max(0, Math.min(images.length - 1, index));
+    if (safeIndex === currentIndex) return;
+
     images.forEach((img, i) => img.classList.toggle('active', i === safeIndex));
+
+    if (swipeDirection) {
+        const nextImg = images[safeIndex];
+        const enterClass = swipeDirection === 'left'
+            ? 'swipe-enter-from-right'
+            : 'swipe-enter-from-left';
+        nextImg.classList.add(enterClass);
+        window.setTimeout(() => {
+            nextImg.classList.remove(enterClass);
+        }, 300);
+    }
 }
 
 function setupMobileFeaturedCardSwipe() {
     if (!isMobileTouchViewport()) return;
 
-    const cards = document.querySelectorAll('#featured-products .product-card');
-    cards.forEach((card) => {
-        if (card.dataset.mobileSwipeBound === '1') return;
-        card.dataset.mobileSwipeBound = '1';
+    const sliders = document.querySelectorAll('#featured-products .product-card .image-slider');
+    sliders.forEach((slider) => {
+        if (slider.dataset.mobileSwipeBound === '1') return;
+        slider.dataset.mobileSwipeBound = '1';
+
+        const card = slider.closest('.product-card');
+        if (!card) return;
 
         let startX = 0;
         let startY = 0;
+        let moveX = 0;
+        let moveY = 0;
         let trackSwipe = false;
         const SWIPE_THRESHOLD = 35;
-        const MAX_VERTICAL_DRIFT = 70;
+        const HORIZONTAL_LOCK_THRESHOLD = 12;
 
-        card.addEventListener('touchstart', (event) => {
+        slider.addEventListener('touchstart', (event) => {
             if (!isMobileTouchViewport()) return;
             if (event.target.closest('.action-btn')) {
                 trackSwipe = false;
@@ -426,10 +498,23 @@ function setupMobileFeaturedCardSwipe() {
             const touch = event.touches[0];
             startX = touch.clientX;
             startY = touch.clientY;
+            moveX = 0;
+            moveY = 0;
             trackSwipe = true;
         }, { passive: true });
 
-        card.addEventListener('touchend', (event) => {
+        slider.addEventListener('touchmove', (event) => {
+            if (!trackSwipe || !isMobileTouchViewport()) return;
+            const touch = event.touches[0];
+            moveX = touch.clientX - startX;
+            moveY = touch.clientY - startY;
+
+            if (Math.abs(moveX) > Math.abs(moveY) && Math.abs(moveX) > HORIZONTAL_LOCK_THRESHOLD) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        slider.addEventListener('touchend', (event) => {
             if (!trackSwipe || !isMobileTouchViewport()) return;
             trackSwipe = false;
 
@@ -437,7 +522,7 @@ function setupMobileFeaturedCardSwipe() {
             const deltaX = touch.clientX - startX;
             const deltaY = touch.clientY - startY;
 
-            if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaY) > MAX_VERTICAL_DRIFT) return;
+            if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaX) <= Math.abs(deltaY)) return;
 
             const images = card.querySelectorAll('.p-img');
             if (images.length < 2) return;
@@ -451,7 +536,7 @@ function setupMobileFeaturedCardSwipe() {
                 ? (activeIndex + 1) % images.length
                 : (activeIndex - 1 + images.length) % images.length;
 
-            setCardImageByIndex(card, nextIndex);
+            setCardImageByIndex(card, nextIndex, deltaX < 0 ? 'left' : 'right');
 
             // Swipe sonrası sentetik tıklama ile modal açılmasını engelle.
             card.dataset.ignoreTap = '1';
@@ -461,6 +546,12 @@ function setupMobileFeaturedCardSwipe() {
 
             event.preventDefault();
         }, { passive: false });
+
+        slider.addEventListener('touchcancel', () => {
+            trackSwipe = false;
+            moveX = 0;
+            moveY = 0;
+        }, { passive: true });
     });
 }
 
