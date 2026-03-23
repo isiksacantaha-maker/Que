@@ -549,7 +549,8 @@ async function createOrder(status, extraFee = 0) {
             orderItems.push({
                 name: p.name,
                 quantity: cartItem.quantity || 1,
-                price: p.price
+                price: p.price,
+                img: (Array.isArray(p.imgs) && p.imgs[0]) ? p.imgs[0] : 'placeholder.jpg'
             });
         }
     });

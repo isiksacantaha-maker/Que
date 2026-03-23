@@ -150,6 +150,51 @@
             text-transform: uppercase;
         }
 
+        .order-products {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .order-product-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fbfbfb;
+            border: 1px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 8px;
+        }
+
+        .order-product-thumb {
+            width: 42px;
+            height: 42px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #f2f2f2;
+            flex-shrink: 0;
+        }
+
+        .order-product-meta {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .order-product-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #222;
+            margin: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .order-product-qty {
+            font-size: 11px;
+            color: #777;
+            margin-top: 2px;
+        }
+
         .hidden {
             display: none;
         }
@@ -229,6 +274,15 @@
                 gap: 10px;
                 padding: 14px;
                 border-radius: 14px;
+            }
+
+            .order-products {
+                width: 100%;
+            }
+
+            .order-product-row {
+                width: 100%;
+                box-sizing: border-box;
             }
 
             .return-box {
@@ -465,10 +519,28 @@
             // API artık kullanıcıya göre filtrelenmiş sipariş döndürüyor
             const userOrders = Array.isArray(allOrders) ? allOrders : [];
 
+            let allProducts = [];
+            try {
+                allProducts = await API.getProducts();
+            } catch (_) {
+                allProducts = [];
+            }
+
             let htmlContent = '';
 
             const whatsappNumberForLink = "905421031368";
             const whatsappNumberForDisplay = "+90 542 103 13 68";
+
+            const resolveOrderItemImage = (item) => {
+                if (item?.img) return item.img;
+                if (Array.isArray(item?.imgs) && item.imgs[0]) return item.imgs[0];
+
+                const itemName = String(item?.name || '').trim().toLowerCase();
+                if (!itemName) return 'placeholder.jpg';
+
+                const product = allProducts.find(p => String(p?.name || '').trim().toLowerCase() === itemName);
+                return (product?.imgs && product.imgs[0]) ? product.imgs[0] : 'placeholder.jpg';
+            };
 
             // WhatsApp Bilgi Kutusu (Sipariş listesinin başında)
             if (whatsappNumberForDisplay) {
@@ -495,6 +567,12 @@
                 if (status === 'İade Talebi Onaylandı') return '#16a085'; // Yeşil-mavi
                 return '#999';
             };
+
+            if (userOrders.length === 0) {
+                htmlContent += '<p style="text-align:center; color:#999; margin-top:12px;">Henüz bir siparişiniz bulunmamaktadır.</p>';
+                ordersContainer.innerHTML = htmlContent;
+                return;
+            }
 
             // Siparişleri sondan başa (en yeni en üstte) listele
             htmlContent += userOrders.reverse().map(order => {
@@ -526,11 +604,21 @@
                     actionButton = `<div style="margin-top:10px; font-size:12px; color:#16a085; font-weight:600;"><i class="fas fa-check-circle"></i> İade talebiniz onaylandı.</div>`;
                 }
 
+                const orderItemsHtml = (Array.isArray(order.items) ? order.items : []).map(item => `
+                    <div class="order-product-row">
+                        <img class="order-product-thumb" src="${resolveOrderItemImage(item)}" alt="${item.name || 'Ürün'}">
+                        <div class="order-product-meta">
+                            <p class="order-product-name">${item.name || 'Ürün'}</p>
+                            <div class="order-product-qty">Adet: ${item.quantity || 1}</div>
+                        </div>
+                    </div>
+                `).join('');
+
                 return `
         <div class="order-item" style="border: 1px solid #eee; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
             <div style="text-align: left;">
                 <span style="color: #aaa; font-size: 11px; letter-spacing:1px;">SİPARİŞ NO: ${getOrderDisplayId(order)}</span>
-                <div style="font-weight: 500; margin-top: 5px;">${order.items.map(item => item.name).join(', ')}</div>
+                <div class="order-products">${orderItemsHtml || '<div style="font-size:12px;color:#999;">Ürün detayı bulunamadı.</div>'}</div>
                 <small style="color: #999;">${order.date}</small>
             </div>
             <div style="text-align: right;">
