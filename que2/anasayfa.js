@@ -586,6 +586,8 @@ function setupMobileFeaturedCardSwipe() {
    6. HOVER VE YARDIMCI ARAÇLAR
    ========================================================================== */
 function handleProductHover(e, card) {
+    if (isMobileTouchViewport()) return;
+
     const slider = card.querySelector('.image-slider');
     if (!slider) return;
 
@@ -603,6 +605,8 @@ function handleProductHover(e, card) {
 }
 
 function resetProductHover(card) {
+    if (isMobileTouchViewport()) return;
+
     const images = card.querySelectorAll('.p-img');
     if (!images.length) return;
     images.forEach((img, i) => img.classList.toggle('active', i === 0));

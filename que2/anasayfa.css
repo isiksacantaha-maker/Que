@@ -688,7 +688,7 @@
     }
 
     .gallery-close-btn {
-        top: 10px;
+        top: max(12px, calc(env(safe-area-inset-top) + 12px));
         right: 10px;
         width: 34px;
         height: 34px;
