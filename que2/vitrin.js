@@ -88,11 +88,40 @@ function retryCollectionLoad() {
     renderProducts();
 }
 
-function initApp() {
+async function initApp() {
     console.log("VİTRİN BAŞLATILDI");
-    renderProducts();
+    await renderProducts();
     checkAdminAccess();
+    openRequestedProductFromQuery();
     console.log("VİTRİN HAZIR");
+}
+
+async function openRequestedProductFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const productId = (params.get('productId') || '').trim();
+    if (!productId) return;
+
+    params.delete('productId');
+    const nextQuery = params.toString();
+    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
+    window.history.replaceState({}, '', nextUrl);
+
+    let products = [];
+    try {
+        products = await API.getProducts();
+    } catch (_) {
+        return;
+    }
+
+    const exists = products.some(p => p && p._id === productId);
+    if (!exists) {
+        if (typeof showToast === 'function') {
+            showToast('Bu ürün artık vitrinde yer almıyor');
+        }
+        return;
+    }
+
+    openDetailModal(productId);
 }
 
 function checkAdminAccess() {

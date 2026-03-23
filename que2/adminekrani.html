@@ -778,12 +778,35 @@ list.innerHTML = displayOrders.map((o, idx) => {
         async function openOrderDetails(orderId) {
             let orders = [];
             orders = await API.getOrders();
+            let products = [];
+            try {
+                products = await API.getProducts();
+            } catch (_) {
+                products = [];
+            }
             
             const order = orders.find(o => o.orderNumber === orderId);
             if(!order) {
                 alert("Sipariş verisi bulunamadı.");
                 return;
             }
+
+            const resolveOrderItemProductId = (item) => {
+                if (item?.productId) return item.productId;
+                const itemName = String(item?.name || '').trim().toLowerCase();
+                if (!itemName) return '';
+                const product = products.find(p => String(p?.name || '').trim().toLowerCase() === itemName);
+                return product?._id || '';
+            };
+
+            const resolveOrderItemImage = (item) => {
+                if (item?.img) return item.img;
+                if (Array.isArray(item?.imgs) && item.imgs[0]) return item.imgs[0];
+                const itemName = String(item?.name || '').trim().toLowerCase();
+                if (!itemName) return 'placeholder.jpg';
+                const product = products.find(p => String(p?.name || '').trim().toLowerCase() === itemName);
+                return (product?.imgs && product.imgs[0]) ? product.imgs[0] : 'placeholder.jpg';
+            };
 
             const itemSubtotal = (order.items || []).reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
             const orderTotal = typeof order.total === 'number' ? order.total : itemSubtotal;
@@ -806,14 +829,27 @@ list.innerHTML = displayOrders.map((o, idx) => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${(order.items || []).map(item => `
-                            <tr style="border-bottom:1px solid #f9f9f9;">
-                                <td style="padding:12px 5px;">${item.name}</td>
-                                <td style="padding:12px 5px;">${item.quantity}</td>
-                                <td style="padding:12px 5px;">${item.price.toLocaleString('tr-TR')} TL</td>
-                                <td style="padding:12px 5px; text-align:right; font-weight:600;">${(item.price * item.quantity).toLocaleString('tr-TR')} TL</td>
-                            </tr>
-                        `).join('')}
+                        ${(order.items || []).map(item => {
+                            const productId = resolveOrderItemProductId(item);
+                            const itemNameHtml = productId
+                                ? `<a href="vitrin.html?productId=${encodeURIComponent(productId)}" style="display:flex; align-items:center; gap:8px; color:#111; text-decoration:none;" title="Ürünü vitrinde görüntüle">
+                                        <img src="${resolveOrderItemImage(item)}" alt="${item.name || 'Ürün'}" style="width:34px; height:34px; border-radius:6px; object-fit:cover; border:1px solid #eee;">
+                                        <span>${item.name}</span>
+                                   </a>`
+                                : `<div style="display:flex; align-items:center; gap:8px;">
+                                        <img src="${resolveOrderItemImage(item)}" alt="${item.name || 'Ürün'}" style="width:34px; height:34px; border-radius:6px; object-fit:cover; border:1px solid #eee;">
+                                        <span>${item.name}</span>
+                                   </div>`;
+
+                            return `
+                                <tr style="border-bottom:1px solid #f9f9f9;">
+                                    <td style="padding:12px 5px;">${itemNameHtml}</td>
+                                    <td style="padding:12px 5px;">${item.quantity}</td>
+                                    <td style="padding:12px 5px;">${item.price.toLocaleString('tr-TR')} TL</td>
+                                    <td style="padding:12px 5px; text-align:right; font-weight:600;">${(item.price * item.quantity).toLocaleString('tr-TR')} TL</td>
+                                </tr>
+                            `;
+                        }).join('')}
                     </tbody>
                 </table>
                 <div style="margin-top:14px; text-align:right;">

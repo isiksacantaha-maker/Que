@@ -547,6 +547,7 @@ async function createOrder(status, extraFee = 0) {
         if (p) {
             subtotal += p.price * (cartItem.quantity || 1);
             orderItems.push({
+                productId: p._id,
                 name: p.name,
                 quantity: cartItem.quantity || 1,
                 price: p.price,

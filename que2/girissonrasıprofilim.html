@@ -167,6 +167,18 @@
             padding: 8px;
         }
 
+        .order-product-row.linkable {
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .order-product-row.linkable:hover {
+            border-color: #d4af37;
+            transform: translateY(-1px);
+        }
+
         .order-product-thumb {
             width: 42px;
             height: 42px;
@@ -542,6 +554,16 @@
                 return (product?.imgs && product.imgs[0]) ? product.imgs[0] : 'placeholder.jpg';
             };
 
+            const resolveOrderItemProductId = (item) => {
+                if (item?.productId) return item.productId;
+
+                const itemName = String(item?.name || '').trim().toLowerCase();
+                if (!itemName) return '';
+
+                const product = allProducts.find(p => String(p?.name || '').trim().toLowerCase() === itemName);
+                return product?._id || '';
+            };
+
             // WhatsApp Bilgi Kutusu (Sipariş listesinin başında)
             if (whatsappNumberForDisplay) {
                 htmlContent += `
@@ -604,15 +626,22 @@
                     actionButton = `<div style="margin-top:10px; font-size:12px; color:#16a085; font-weight:600;"><i class="fas fa-check-circle"></i> İade talebiniz onaylandı.</div>`;
                 }
 
-                const orderItemsHtml = (Array.isArray(order.items) ? order.items : []).map(item => `
-                    <div class="order-product-row">
+                const orderItemsHtml = (Array.isArray(order.items) ? order.items : []).map(item => {
+                    const productId = resolveOrderItemProductId(item);
+                    const rowInner = `
                         <img class="order-product-thumb" src="${resolveOrderItemImage(item)}" alt="${item.name || 'Ürün'}">
                         <div class="order-product-meta">
                             <p class="order-product-name">${item.name || 'Ürün'}</p>
                             <div class="order-product-qty">Adet: ${item.quantity || 1}</div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+
+                    if (productId) {
+                        return `<a class="order-product-row linkable" href="vitrin.html?productId=${encodeURIComponent(productId)}" title="Ürünü vitrinde görüntüle">${rowInner}</a>`;
+                    }
+
+                    return `<div class="order-product-row">${rowInner}</div>`;
+                }).join('');
 
                 return `
         <div class="order-item" style="border: 1px solid #eee; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
