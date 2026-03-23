@@ -1047,8 +1047,8 @@ body {
     .filter-sidebar { 
         width: 100%;
         min-width: auto;
-        position: sticky;
-        top: 78px;
+        position: relative;
+        top: 0;
         order: -1; /* Filtreyi mobilde üste alır */
         z-index: 80;
         padding: 16px;
@@ -1215,7 +1215,7 @@ body {
     }
 
     .filter-sidebar {
-        top: 70px;
+        top: 0;
         border-radius: 16px;
         padding: 12px;
     }
