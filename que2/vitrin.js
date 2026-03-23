@@ -17,6 +17,7 @@ const PRODUCT_EVENT_REFRESH_GAP_MS = 1200;
 let productListRetryTimer = null;
 let lastProductEventRefreshAt = 0;
 let productRenderRequestId = 0;
+let returnToOrdersOnDetailClose = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -99,9 +100,13 @@ async function initApp() {
 async function openRequestedProductFromQuery() {
     const params = new URLSearchParams(window.location.search);
     const productId = (params.get('productId') || '').trim();
+    const source = (params.get('source') || '').trim().toLowerCase();
     if (!productId) return;
 
+    returnToOrdersOnDetailClose = source === 'orders';
+
     params.delete('productId');
+    params.delete('source');
     const nextQuery = params.toString();
     const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
     window.history.replaceState({}, '', nextUrl);
@@ -440,6 +445,12 @@ function toggleWishlistDetail(id) {
 }
 
 function closeDetailModal() {
+    if (returnToOrdersOnDetailClose) {
+        returnToOrdersOnDetailClose = false;
+        window.location.href = 'girissonrasıprofilim.html?tab=orders';
+        return;
+    }
+
     document.getElementById('detail-overlay').style.display = 'none';
     document.body.style.overflow = '';
 }

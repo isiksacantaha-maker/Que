@@ -637,7 +637,7 @@
                     `;
 
                     if (productId) {
-                        return `<a class="order-product-row linkable" href="vitrin.html?productId=${encodeURIComponent(productId)}" title="Ürünü vitrinde görüntüle">${rowInner}</a>`;
+                        return `<a class="order-product-row linkable" href="vitrin.html?productId=${encodeURIComponent(productId)}&source=orders" title="Ürünü vitrinde görüntüle">${rowInner}</a>`;
                     }
 
                     return `<div class="order-product-row">${rowInner}</div>`;
