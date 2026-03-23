@@ -4,6 +4,10 @@
 let currentGalleryIndex = 0;
 let currentGalleryImages = [];
 
+function isMobileTouchViewport() {
+    return window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches;
+}
+
 function attachGallerySwipe() {
     const wrapper = document.querySelector('.main-img-wrapper');
     if (!wrapper || wrapper.dataset.swipeBound === '1') return;
@@ -214,7 +218,7 @@ async function loadFeaturedProducts() {
             <div class="product-card" 
                  onmousemove="handleProductHover(event, this)"
                   onmouseleave="resetProductHover(this)"
-                 onclick="openDetailModal('${p._id}')">
+                 onclick="handleFeaturedCardTap(event, '${p._id}')">
                 
                 <div class="card-actions">
                     <button class="action-btn" onclick="event.stopPropagation(); toggleWishlist('${p._id}')">
@@ -238,6 +242,8 @@ async function loadFeaturedProducts() {
             </div>
         `;
     }).join('');
+
+    setupMobileFeaturedCardSwipe();
 }
 
 window.retryFeaturedProducts = retryFeaturedProducts;
@@ -374,6 +380,88 @@ function toggleWishlistDetail(id) {
 function closeDetailModal() {
     document.getElementById('detail-overlay').style.display = 'none';
     document.body.style.overflow = 'auto';
+}
+
+function handleFeaturedCardTap(event, id) {
+    const card = event.currentTarget;
+    if (card && card.dataset.ignoreTap === '1') {
+        event.preventDefault();
+        event.stopPropagation();
+        card.dataset.ignoreTap = '0';
+        return false;
+    }
+
+    openDetailModal(id);
+    return false;
+}
+
+function setCardImageByIndex(card, index) {
+    const images = card.querySelectorAll('.p-img');
+    if (!images.length) return;
+    const safeIndex = Math.max(0, Math.min(images.length - 1, index));
+    images.forEach((img, i) => img.classList.toggle('active', i === safeIndex));
+}
+
+function setupMobileFeaturedCardSwipe() {
+    if (!isMobileTouchViewport()) return;
+
+    const cards = document.querySelectorAll('#featured-products .product-card');
+    cards.forEach((card) => {
+        if (card.dataset.mobileSwipeBound === '1') return;
+        card.dataset.mobileSwipeBound = '1';
+
+        let startX = 0;
+        let startY = 0;
+        let trackSwipe = false;
+        const SWIPE_THRESHOLD = 35;
+        const MAX_VERTICAL_DRIFT = 70;
+
+        card.addEventListener('touchstart', (event) => {
+            if (!isMobileTouchViewport()) return;
+            if (event.target.closest('.action-btn')) {
+                trackSwipe = false;
+                return;
+            }
+
+            const touch = event.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            trackSwipe = true;
+        }, { passive: true });
+
+        card.addEventListener('touchend', (event) => {
+            if (!trackSwipe || !isMobileTouchViewport()) return;
+            trackSwipe = false;
+
+            const touch = event.changedTouches[0];
+            const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+
+            if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaY) > MAX_VERTICAL_DRIFT) return;
+
+            const images = card.querySelectorAll('.p-img');
+            if (images.length < 2) return;
+
+            let activeIndex = 0;
+            images.forEach((img, i) => {
+                if (img.classList.contains('active')) activeIndex = i;
+            });
+
+            const nextIndex = deltaX < 0
+                ? (activeIndex + 1) % images.length
+                : (activeIndex - 1 + images.length) % images.length;
+
+            setCardImageByIndex(card, nextIndex);
+
+            // Swipe sonrası sentetik tıklama ile modal açılmasını engelle.
+            card.dataset.ignoreTap = '1';
+            window.setTimeout(() => {
+                card.dataset.ignoreTap = '0';
+            }, 350);
+
+            event.preventDefault();
+        }, { passive: false });
+    });
 }
 
 /* ==========================================================================
