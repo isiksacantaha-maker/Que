@@ -284,15 +284,8 @@ window.toggleWishlist = function(id) {
 
     sessionStorage.setItem('que_wishlist', JSON.stringify(wishlist));
 
-    if (isAdding) {
-        window.location.href = 'begendiklerim.html';
-        return;
-    }
-
     loadFeaturedProducts(); // Ana sayfadaki kalpleri güncelle
-    // Eğer modal açıksa oradaki butonu da güncelle
-    const modalFavBtn = document.querySelector('.btn-fav');
-    if (modalFavBtn) toggleWishlistDetail(id);
+    return isAdding;
 };
 
 /* ==========================================================================
@@ -386,15 +379,19 @@ function prevGalleryImage() {
 }
 
 function toggleWishlistDetail(id) {
-    const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
-    const isFav = wishlist.includes(id);
+    const addedToFavorites = toggleWishlist(id);
+    const isFav = addedToFavorites === true;
     const btn = document.querySelector('.btn-fav');
     
     if (btn) {
         btn.classList.toggle('active', isFav);
         btn.innerHTML = isFav 
-            ? '<i class="fas fa-heart"></i> FAVORİLERDEN ÇIKAR'
-            : '<i class="fas fa-heart"></i> FAVORİLERİME EKLE';
+            ? '<i class="fas fa-heart"></i> FAVORİLERİNİZE EKLENDİ'
+            : '<i class="fas fa-heart"></i> FAVORİLERİNİZDEN ÇIKARILDI';
+    }
+
+    if (typeof showToast === 'function') {
+        showToast(isFav ? 'Ürün favorilerinize eklendi' : 'Ürün favorilerinizden çıkarıldı');
     }
 }
 
