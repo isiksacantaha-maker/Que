@@ -22,10 +22,44 @@ document.addEventListener('DOMContentLoaded', () => {
     initApp();
     setupDropZone();
     setupAddDropZone();
+    initMobileFilterPanel();
     updateCartCount();
     window.addEventListener('online', () => renderProducts());
     window.addEventListener('que:products-updated', handleProductsUpdatedEvent);
 });
+
+function isMobileViewport() {
+    return window.matchMedia('(max-width: 900px)').matches;
+}
+
+function initMobileFilterPanel() {
+    const sidebar = document.querySelector('.filter-sidebar');
+    const toggleBtn = document.getElementById('mobile-filter-toggle');
+    if (!sidebar || !toggleBtn) return;
+
+    const syncPanelState = () => {
+        if (isMobileViewport()) {
+            sidebar.classList.remove('mobile-open');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        } else {
+            sidebar.classList.remove('mobile-open');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+    };
+
+    syncPanelState();
+    window.addEventListener('resize', syncPanelState);
+}
+
+function toggleMobileFilters() {
+    const sidebar = document.querySelector('.filter-sidebar');
+    const toggleBtn = document.getElementById('mobile-filter-toggle');
+    if (!sidebar || !toggleBtn || !isMobileViewport()) return;
+
+    const nextOpen = !sidebar.classList.contains('mobile-open');
+    sidebar.classList.toggle('mobile-open', nextOpen);
+    toggleBtn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+}
 
 function renderProductListSkeleton() {
     const list = document.getElementById('product-list');
@@ -916,6 +950,15 @@ async function filterProducts() {
     else if (sortVal === "high") filtered.sort((a, b) => b.price - a.price);
 
     renderProducts(filtered);
+
+    if (isMobileViewport()) {
+        const sidebar = document.querySelector('.filter-sidebar');
+        const toggleBtn = document.getElementById('mobile-filter-toggle');
+        if (sidebar && toggleBtn) {
+            sidebar.classList.remove('mobile-open');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+    }
 }
 
 function handleProductHover(e, card) {

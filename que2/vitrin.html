@@ -51,6 +51,12 @@
         </main>
 
         <aside class="filter-sidebar">
+            <button id="mobile-filter-toggle" class="mobile-filter-toggle" type="button" onclick="toggleMobileFilters()" aria-expanded="false" aria-controls="mobile-filter-content">
+                <span>Sıralama ve Kategoriler</span>
+                <i class="fas fa-sliders-h"></i>
+            </button>
+
+            <div id="mobile-filter-content" class="mobile-filter-content">
             <div id="admin-only-tools" class="admin-box hidden">
                 <button class="admin-btn-sort" onclick="toggleEditMode()">
                     <i class="fas fa-sort"></i> Sıralamayı Düzenle
@@ -75,6 +81,7 @@
                     <label><input type="checkbox" class="cat-filter" value="Yüzük" onchange="filterProducts()"> Yüzükler</label>
                     <label><input type="checkbox" class="cat-filter" value="Diğer" onchange="filterProducts()"> Diğerleri</label>
                 </div>
+            </div>
             </div>
         </aside>
 

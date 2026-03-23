@@ -226,6 +226,14 @@ body {
     cursor: pointer;
 }
 
+.mobile-filter-toggle {
+    display: none;
+}
+
+.mobile-filter-content {
+    display: block;
+}
+
 /* ==========================================================================
    4. APPLE STYLE AKSİYONLAR VE MODALLAR
    ========================================================================== */
@@ -1052,6 +1060,47 @@ body {
         box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
     }
 
+    .mobile-filter-toggle {
+        width: 100%;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid #e9e9e9;
+        border-radius: 14px;
+        background: #fff;
+        color: #1a1a1a;
+        padding: 0 14px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        margin-bottom: 12px;
+    }
+
+    .mobile-filter-toggle i {
+        font-size: 14px;
+        transition: transform 0.25s ease;
+    }
+
+    .filter-sidebar.mobile-open .mobile-filter-toggle i {
+        transform: rotate(180deg);
+    }
+
+    .mobile-filter-content {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: max-height 0.28s ease, opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .filter-sidebar.mobile-open .mobile-filter-content {
+        max-height: 560px;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
     .filter-group {
         margin-bottom: 14px;
     }
@@ -1169,6 +1218,14 @@ body {
         top: 70px;
         border-radius: 16px;
         padding: 12px;
+    }
+
+    .mobile-filter-toggle {
+        height: 42px;
+        border-radius: 12px;
+        font-size: 12px;
+        padding: 0 12px;
+        margin-bottom: 10px;
     }
 
     .checkbox-group {
