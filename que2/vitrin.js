@@ -577,6 +577,41 @@ function formatBytes(bytes) {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function normalizePriceValue(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+
+    let text = String(value ?? '').trim();
+    if (!text) return 0;
+
+    // Para simgeleri ve gereksiz karakterleri temizle.
+    text = text.replace(/\s+/g, '').replace(/[^\d,.-]/g, '');
+
+    const hasComma = text.includes(',');
+    const hasDot = text.includes('.');
+
+    if (hasComma && hasDot) {
+        const lastComma = text.lastIndexOf(',');
+        const lastDot = text.lastIndexOf('.');
+
+        if (lastComma > lastDot) {
+            text = text.replace(/\./g, '').replace(',', '.');
+        } else {
+            text = text.replace(/,/g, '');
+        }
+    } else if (hasComma) {
+        text = /,\d{1,2}$/.test(text)
+            ? text.replace(',', '.')
+            : text.replace(/,/g, '');
+    } else if (hasDot) {
+        text = /\.\d{1,2}$/.test(text)
+            ? text
+            : text.replace(/\./g, '');
+    }
+
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
 async function optimizeProductForUpload(product) {
     let optimizedProduct = { ...product, imgs: [...(product.imgs || [])] };
     let payloadBytes = getEstimatedPayloadBytes(optimizedProduct);
@@ -755,10 +790,16 @@ async function saveProductUpdate() {
         return;
     }
 
+    const normalizedEditPrice = normalizePriceValue(document.getElementById('edit-price').value);
+    if (normalizedEditPrice <= 0) {
+        showToast('Lütfen geçerli bir fiyat girin');
+        return;
+    }
+
     let updatedProduct = {
         _id: id,
         name: document.getElementById('edit-name').value,
-        price: Number(document.getElementById('edit-price').value),
+        price: normalizedEditPrice,
         category: document.getElementById('edit-category').value,
         description: document.getElementById('edit-desc').value,
         imgs: currentEditImages
@@ -843,10 +884,10 @@ function closeAddProductModal() {
 async function saveNewProduct() {
     const name = document.getElementById('add-name').value.trim();
     const category = document.getElementById('add-category').value;
-    const price = Number(document.getElementById('add-price').value);
+    const price = normalizePriceValue(document.getElementById('add-price').value);
     const description = document.getElementById('add-desc').value.trim();
     
-    if (!name || !category || !price || currentAddImages.length < MIN_IMAGE_COUNT) {
+    if (!name || !category || price <= 0 || currentAddImages.length < MIN_IMAGE_COUNT) {
         showToast(`Lütfen tüm alanları doldurun ve en az ${MIN_IMAGE_COUNT} resim yükleyin`);
         return;
     }
@@ -946,8 +987,11 @@ async function filterProducts() {
     let filtered = allProducts;
     if (selectedCats.length > 0) filtered = filtered.filter(p => selectedCats.includes(p.category));
 
-    if (sortVal === "low") filtered.sort((a, b) => a.price - b.price);
-    else if (sortVal === "high") filtered.sort((a, b) => b.price - a.price);
+    if (sortVal === "low") {
+        filtered.sort((a, b) => normalizePriceValue(a.price) - normalizePriceValue(b.price));
+    } else if (sortVal === "high") {
+        filtered.sort((a, b) => normalizePriceValue(b.price) - normalizePriceValue(a.price));
+    }
 
     renderProducts(filtered);
 
@@ -985,7 +1029,7 @@ function resetProductHover(card) {
 }
 
 function formatProductPrice(price) {
-    const value = Number(price);
+    const value = normalizePriceValue(price);
     return Number.isFinite(value) ? `${value.toLocaleString('tr-TR')} TL` : 'Fiyat bilgisi yok';
 }
 
