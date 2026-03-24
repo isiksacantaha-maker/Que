@@ -126,14 +126,27 @@ function notifyProductsUpdated(products, source = 'live') {
     }));
 }
 
-async function fetchProductsFromBase(baseUrl) {
+async function fetchProductsFromBase(baseUrl, options = {}) {
+    const limit = Number.parseInt(options?.limit, 10);
+    const skip = Number.parseInt(options?.skip, 10);
+    const searchParams = new URLSearchParams();
+
+    if (Number.isInteger(limit) && limit > 0) {
+        searchParams.set('limit', String(limit));
+    }
+
+    if (Number.isInteger(skip) && skip >= 0) {
+        searchParams.set('skip', String(skip));
+    }
+
+    const productUrl = `${baseUrl}/products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
     let lastError = null;
 
     for (let attempt = 0; attempt <= PRODUCT_RETRY_COUNT; attempt++) {
         const startedAt = performance.now();
 
         try {
-            const response = await fetchWithTimeout(`${baseUrl}/products`, { cache: "no-store" });
+            const response = await fetchWithTimeout(productUrl, { cache: "no-store" });
 
             if (response.ok) {
                 const products = await response.json();
@@ -148,7 +161,7 @@ async function fetchProductsFromBase(baseUrl) {
             }
 
             if ((response.status === 401 || response.status === 403) && sessionStorage.getItem('authToken')) {
-                const retryWithAuth = await fetchWithTimeout(`${baseUrl}/products`, {
+                const retryWithAuth = await fetchWithTimeout(productUrl, {
                     cache: "no-store",
                     headers: { ...API.getAuthHeaders() }
                 });
@@ -249,6 +262,22 @@ async function fetchAndMergeProductsFromSources() {
     }
 
     return { mergedProducts, hasLiveSource, lastError };
+}
+
+async function fetchPaginatedProducts(limit, skip) {
+    let lastError = null;
+
+    for (const baseUrl of getApiBaseCandidates()) {
+        try {
+            const products = await fetchProductsFromBase(baseUrl, { limit, skip });
+            rememberApiBase(baseUrl);
+            return Array.isArray(products) ? products : [];
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw lastError || new Error("Ürünler yüklenemedi");
 }
 
 function shouldDebounceBackgroundSync() {
@@ -378,16 +407,25 @@ const API = {
     // --- ÜRÜN İŞLEMLERİ ---
 
     // Tüm ürünleri getir
-    async getProducts() {
-        const cachedProducts = readProductCache();
-        const staleProducts = readProductCache({ allowExpired: true });
+    async getProducts(options = {}) {
+        const limit = Number.parseInt(options?.limit, 10);
+        const skip = Number.parseInt(options?.skip, 10);
+        const forceRefresh = options?.forceRefresh === true;
+        const usePagination = Number.isInteger(limit) && limit > 0 && Number.isInteger(skip) && skip >= 0;
 
-        if (cachedProducts) {
-            scheduleBackgroundProductSync();
-            return cachedProducts;
+        if (!usePagination) {
+            const cachedProducts = forceRefresh ? null : readProductCache();
+            const staleProducts = readProductCache({ allowExpired: true });
+
+            if (cachedProducts) {
+                scheduleBackgroundProductSync();
+                return cachedProducts;
+            }
+
+            return fetchProductsWithFallback(staleProducts);
         }
 
-        return fetchProductsWithFallback(staleProducts);
+        return fetchPaginatedProducts(limit, skip);
     },
 
     // Ürün Kaydet (Hem Yeni Ekleme Hem Güncelleme)

@@ -59,6 +59,165 @@ const apiLimiter = rateLimit({
 });
 app.use('/api', apiLimiter);
 
+const MAX_PRODUCT_IMAGES = 5;
+const MAX_ORDER_ITEMS = 50;
+
+function normalizeText(value, options = {}) {
+    const { maxLength = 500, allowEmpty = false } = options;
+    const text = String(value || '').trim();
+
+    if (!text) {
+        return allowEmpty ? '' : null;
+    }
+
+    return text.slice(0, maxLength);
+}
+
+function normalizeOptionalText(value, options = {}) {
+    return normalizeText(value, { ...options, allowEmpty: true });
+}
+
+function normalizePrice(value) {
+    const amount = Number(value);
+    if (!Number.isFinite(amount) || amount < 0) return null;
+    return Math.round(amount * 100) / 100;
+}
+
+function normalizePositiveInteger(value, options = {}) {
+    const { min = 1, max = 999 } = options;
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isInteger(parsed) || parsed < min || parsed > max) return null;
+    return parsed;
+}
+
+function sanitizeProductImages(rawImages) {
+    if (!Array.isArray(rawImages)) return null;
+
+    const images = rawImages
+        .map(img => String(img || '').trim())
+        .filter(Boolean)
+        .slice(0, MAX_PRODUCT_IMAGES);
+
+    return images.length ? images : null;
+}
+
+function sanitizeProductPayload(payload, options = {}) {
+    const { partial = false } = options;
+    const normalized = {};
+
+    if (!partial || Object.prototype.hasOwnProperty.call(payload, 'name')) {
+        const name = normalizeText(payload?.name, { maxLength: 120 });
+        if (!name) throw new Error('Ürün adı zorunludur');
+        normalized.name = name;
+    }
+
+    if (!partial || Object.prototype.hasOwnProperty.call(payload, 'category')) {
+        const category = normalizeText(payload?.category, { maxLength: 40 });
+        if (!category) throw new Error('Kategori zorunludur');
+        normalized.category = category;
+    }
+
+    if (!partial || Object.prototype.hasOwnProperty.call(payload, 'price')) {
+        const price = normalizePrice(payload?.price);
+        if (price === null) throw new Error('Geçerli bir fiyat girilmelidir');
+        normalized.price = price;
+    }
+
+    if (!partial || Object.prototype.hasOwnProperty.call(payload, 'description')) {
+        normalized.description = normalizeOptionalText(payload?.description, { maxLength: 2000 });
+    }
+
+    if (!partial || Object.prototype.hasOwnProperty.call(payload, 'imgs')) {
+        const imgs = sanitizeProductImages(payload?.imgs);
+        if (!imgs) throw new Error('En az bir ürün görseli gereklidir');
+        normalized.imgs = imgs;
+    }
+
+    return normalized;
+}
+
+function sanitizeShippingInfo(rawShippingInfo) {
+    const shippingInfo = rawShippingInfo && typeof rawShippingInfo === 'object'
+        ? rawShippingInfo
+        : {};
+
+    const name = normalizeText(shippingInfo.name, { maxLength: 120 });
+    const phone = normalizeText(shippingInfo.phone, { maxLength: 30 });
+    const address = normalizeText(shippingInfo.address, { maxLength: 400 });
+    const city = normalizeText(shippingInfo.city, { maxLength: 80 });
+
+    if (!name || !phone || !address || !city) {
+        throw new Error('Teslimat bilgileri eksik');
+    }
+
+    return { name, phone, address, city };
+}
+
+async function buildValidatedOrderPayload(payload, orderUserEmail) {
+    const orderNumber = normalizeText(payload?.id || payload?.orderNumber, { maxLength: 32 });
+    if (!orderNumber) throw new Error('Geçerli sipariş numarası gereklidir');
+
+    const rawItems = Array.isArray(payload?.items) ? payload.items : [];
+    if (!rawItems.length) throw new Error('Sipariş sepeti boş olamaz');
+    if (rawItems.length > MAX_ORDER_ITEMS) throw new Error('Siparişte çok fazla ürün var');
+
+    const normalizedItems = rawItems.map((item) => {
+        const productId = String(item?.productId || '').trim();
+        const quantity = normalizePositiveInteger(item?.quantity, { min: 1, max: 20 });
+
+        if (!mongoose.isValidObjectId(productId) || quantity === null) {
+            throw new Error('Sipariş kalemlerinden biri geçersiz');
+        }
+
+        return { productId, quantity };
+    });
+
+    const productIds = [...new Set(normalizedItems.map(item => item.productId))];
+    const products = await Product.find({ _id: { $in: productIds } }).lean();
+    const productMap = new Map(products.map(product => [String(product._id), product]));
+
+    if (productMap.size !== productIds.length) {
+        throw new Error('Siparişte artık vitrinde olmayan ürün var');
+    }
+
+    let subtotal = 0;
+    const orderItems = normalizedItems.map((item) => {
+        const product = productMap.get(item.productId);
+        const price = normalizePrice(product?.price);
+        if (price === null) {
+            throw new Error('Siparişte fiyatı geçersiz ürün bulundu');
+        }
+
+        subtotal += price * item.quantity;
+        return {
+            productId: String(product._id),
+            name: normalizeText(product.name, { maxLength: 120 }) || 'Isimsiz Urun',
+            quantity: item.quantity,
+            price,
+            img: Array.isArray(product.imgs) && product.imgs[0] ? String(product.imgs[0]).trim() : 'placeholder.jpg'
+        };
+    });
+
+    subtotal = Math.round(subtotal * 100) / 100;
+    const extraFee = normalizePrice(payload?.extraFee) || 0;
+    const shippingFee = subtotal >= 3000 ? 0 : (subtotal > 0 ? 100 : 0);
+    const total = Math.round((subtotal + shippingFee + extraFee) * 100) / 100;
+    const status = normalizeText(payload?.status, { maxLength: 80 }) || 'Havale Bekleniyor';
+
+    return {
+        orderNumber,
+        date: new Date().toLocaleDateString('tr-TR'),
+        items: orderItems,
+        subtotal,
+        shippingFee,
+        extraFee,
+        total,
+        status,
+        userEmail: normalizeOptionalText(orderUserEmail, { maxLength: 160 }) || 'misafir',
+        shippingInfo: sanitizeShippingInfo(payload?.shippingInfo)
+    };
+}
+
 function signAuthToken(payload) {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });
 }
@@ -92,12 +251,18 @@ const saltRounds = 10; // Şifre hash'leme için salt değeri
 // --- VERİ MODELLERİ (ŞEMALAR) ---
 
 const ProductSchema = new mongoose.Schema({
-    name: String,
-    category: String,
-    price: Number,
-    description: String,
-    imgs: [String]
-});
+    name: { type: String, required: true, trim: true, maxlength: 120 },
+    category: { type: String, required: true, trim: true, maxlength: 40 },
+    price: { type: Number, required: true, min: 0 },
+    description: { type: String, default: '', maxlength: 2000 },
+    imgs: {
+        type: [String],
+        validate: {
+            validator: (value) => Array.isArray(value) && value.length > 0 && value.length <= MAX_PRODUCT_IMAGES,
+            message: 'Ürün görsel sayısı 1 ile 5 arasında olmalıdır'
+        }
+    }
+}, { timestamps: true });
 
 const UserSchema = new mongoose.Schema({
     name: String,
@@ -117,14 +282,38 @@ UserSchema.pre('save', async function() {
     this.pass = await bcrypt.hash(this.pass, salt);
 });
 
+const OrderItemSchema = new mongoose.Schema({
+    productId: { type: String, required: true },
+    name: { type: String, required: true, maxlength: 120 },
+    quantity: { type: Number, required: true, min: 1, max: 20 },
+    price: { type: Number, required: true, min: 0 },
+    img: { type: String, default: 'placeholder.jpg' }
+}, { _id: false });
+
+const ShippingInfoSchema = new mongoose.Schema({
+    name: { type: String, required: true, maxlength: 120 },
+    phone: { type: String, required: true, maxlength: 30 },
+    address: { type: String, required: true, maxlength: 400 },
+    city: { type: String, required: true, maxlength: 80 }
+}, { _id: false });
+
 const OrderSchema = new mongoose.Schema({
-    orderNumber: { type: String, unique: true }, // Frontend'den gelen #QUE-123456 gibi ID'ler için
-    date: String,
-    items: Array,
-    total: Number,
-    status: String,
-    userEmail: String,
-    shippingInfo: Object,
+    orderNumber: { type: String, unique: true, required: true },
+    date: { type: String, required: true },
+    items: {
+        type: [OrderItemSchema],
+        validate: {
+            validator: (value) => Array.isArray(value) && value.length > 0 && value.length <= MAX_ORDER_ITEMS,
+            message: 'Sipariş kalemleri 1 ile 50 arasında olmalıdır'
+        }
+    },
+    subtotal: { type: Number, required: true, min: 0, default: 0 },
+    shippingFee: { type: Number, required: true, min: 0, default: 0 },
+    extraFee: { type: Number, required: true, min: 0, default: 0 },
+    total: { type: Number, required: true, min: 0 },
+    status: { type: String, required: true, maxlength: 80 },
+    userEmail: { type: String, maxlength: 160, default: 'misafir' },
+    shippingInfo: { type: ShippingInfoSchema, required: true },
     cargo: Object,
     completionDate: Date
 }, { timestamps: true });
@@ -138,15 +327,21 @@ const Order = mongoose.model('Order', OrderSchema);
 // 1. ÜRÜNLER
 app.get('/api/products', async (req, res) => {
     try {
-        const products = await Product.find();
+        const limit = normalizePositiveInteger(req.query?.limit, { min: 1, max: 200 });
+        const skip = normalizePositiveInteger(req.query?.skip, { min: 0, max: 100000 });
+        let query = Product.find().lean();
+
+        if (skip !== null) query = query.skip(skip);
+        if (limit !== null) query = query.limit(limit);
+
+        const products = await query;
         res.json(products);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/products', requireAuth, requireAdmin, async (req, res) => {
     try {
-        // ID yönetimi artık Mongoose'a ait (_id)
-        const newProduct = new Product(req.body);
+        const newProduct = new Product(sanitizeProductPayload(req.body));
         await newProduct.save();
         res.json(newProduct);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -154,7 +349,11 @@ app.post('/api/products', requireAuth, requireAdmin, async (req, res) => {
 
 app.put('/api/products/:id', requireAuth, requireAdmin, async (req, res) => {
     try {
-        const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updatedProduct = await Product.findByIdAndUpdate(
+            req.params.id,
+            sanitizeProductPayload(req.body),
+            { new: true, runValidators: true }
+        );
         res.json(updatedProduct);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -190,9 +389,7 @@ app.post('/api/orders', async (req, res) => {
             }
         }
 
-        // Frontend'den gelen 'id' alanını 'orderNumber' olarak kaydet
-        const orderData = { ...req.body, orderNumber: req.body.id, userEmail: orderUserEmail };
-        delete orderData.id; // Mongoose'un kendi _id'sini kullanmasına izin ver
+        const orderData = await buildValidatedOrderPayload(req.body, orderUserEmail);
         const newOrder = new Order(orderData);
         await newOrder.save();
         res.json(newOrder);

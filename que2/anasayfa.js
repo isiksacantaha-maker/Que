@@ -230,6 +230,13 @@ async function loadFeaturedProducts() {
         const isFav = wishlist.includes(p._id);
         const images = getProductImages(p);
         const productName = p.name || 'Isimsiz Urun';
+        const safeProductName = typeof escapeHtml === 'function' ? escapeHtml(productName) : productName;
+        const safeCategory = typeof escapeHtml === 'function' ? escapeHtml(p.category || 'ÖZEL TASARIM') : (p.category || 'ÖZEL TASARIM');
+        const safeDescription = typeof escapeHtml === 'function'
+            ? escapeHtml(p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.')
+            : (p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.');
+        const safeCardImages = images.card.map((src) => typeof safeImageSrc === 'function' ? safeImageSrc(src) : src);
+        const safeGalleryImages = images.gallery.map((src) => typeof safeImageSrc === 'function' ? safeImageSrc(src) : src);
         const shouldPrioritize = index < 2;
         const loadingMode = shouldPrioritize ? 'eager' : 'lazy';
         const fetchPriority = shouldPrioritize ? 'high' : 'low';
@@ -250,13 +257,13 @@ async function loadFeaturedProducts() {
                 </div>
 
                 <div class="image-slider">
-                    <img src="${images.card[0]}" class="p-img active" alt="${productName} 1" loading="${loadingMode}" decoding="async" fetchpriority="${fetchPriority}">
-                    <img data-src="${images.card[1]}" class="p-img" alt="${productName} 2" loading="lazy" decoding="async" fetchpriority="low">
-                    <img data-src="${images.card[2]}" class="p-img" alt="${productName} 3" loading="lazy" decoding="async" fetchpriority="low">
+                    <img src="${safeCardImages[0]}" class="p-img active" alt="${safeProductName} 1" loading="${loadingMode}" decoding="async" fetchpriority="${fetchPriority}">
+                    <img data-src="${safeCardImages[1]}" class="p-img" alt="${safeProductName} 2" loading="lazy" decoding="async" fetchpriority="low">
+                    <img data-src="${safeCardImages[2]}" class="p-img" alt="${safeProductName} 3" loading="lazy" decoding="async" fetchpriority="low">
                 </div>
 
                 <div class="product-info">
-                    <h3>${productName}</h3>
+                    <h3>${safeProductName}</h3>
                     <div class="price">${formatProductPrice(p.price)}</div>
                 </div>
             </div>
@@ -303,9 +310,15 @@ async function openDetailModal(id) {
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
     const isFav = wishlist.includes(p._id);
     const images = getProductImages(p);
+    const safeProductName = typeof escapeHtml === 'function' ? escapeHtml(p.name || 'Isimsiz Urun') : (p.name || 'Isimsiz Urun');
+    const safeCategory = typeof escapeHtml === 'function' ? escapeHtml(p.category || 'ÖZEL TASARIM') : (p.category || 'ÖZEL TASARIM');
+    const safeDescription = typeof escapeHtml === 'function'
+        ? escapeHtml(p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.')
+        : (p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.');
+    const safeGalleryImages = images.gallery.map((src) => typeof safeImageSrc === 'function' ? safeImageSrc(src) : src);
 
     currentGalleryIndex = 0;
-    currentGalleryImages = images.gallery;
+    currentGalleryImages = safeGalleryImages;
 
     content.innerHTML = `
         <div class="gallery-container">
@@ -315,7 +328,7 @@ async function openDetailModal(id) {
 
             <div class="detail-gallery">
                 <div class="main-img-wrapper">
-                    <img src="${currentGalleryImages[0]}" id="mainDetailImg" class="main-detail-img" alt="Urun Resmi" onclick="openImageZoom(currentGalleryIndex)">
+                    <img src="${currentGalleryImages[0]}" id="mainDetailImg" class="main-detail-img" alt="${safeProductName}" onclick="openImageZoom(currentGalleryIndex)">
                     
                     <button class="gallery-nav-btn gallery-prev" onclick="prevGalleryImage()">
                         <i class="fas fa-chevron-left"></i>
@@ -334,9 +347,9 @@ async function openDetailModal(id) {
             </div>
 
             <div class="detail-info">
-                <span class="category">${p.category || 'ÖZEL TASARIM'}</span>
-                <h2>${p.name || 'Isimsiz Urun'}</h2>
-                <p class="desc">${p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.'}</p>
+                <span class="category">${safeCategory}</span>
+                <h2>${safeProductName}</h2>
+                <p class="desc">${safeDescription}</p>
                 <div class="price-display">${formatProductPrice(p.price)}</div>
 
                 <div class="detail-buttons">

@@ -14,10 +14,14 @@ const MIN_IMAGE_COUNT = 3;
 const PRODUCT_LIST_RETRY_DELAY_MS = 3500;
 const PRODUCT_LIST_SKELETON_COUNT = 9;
 const PRODUCT_EVENT_REFRESH_GAP_MS = 1200;
+const PRODUCT_PAGE_SIZE = 18;
 let productListRetryTimer = null;
 let lastProductEventRefreshAt = 0;
 let productRenderRequestId = 0;
 let returnToOrdersOnDetailClose = false;
+let currentProductPage = 0;
+let hasMoreProducts = true;
+let activeProductFilterData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -152,9 +156,15 @@ function checkAdminAccess() {
    ========================================================================== */
 async function renderProducts(filterData = null) {
     const list = document.getElementById('product-list');
+    const loadMoreWrapper = document.getElementById('product-list-load-more');
     if (!list) return;
     const requestId = ++productRenderRequestId;
     const hasFilterData = Array.isArray(filterData);
+    const isPaginatedFetch = !hasFilterData;
+
+    activeProductFilterData = hasFilterData ? [...filterData] : null;
+    currentProductPage = 0;
+    hasMoreProducts = true;
 
     if (productListRetryTimer) {
         clearTimeout(productListRetryTimer);
@@ -168,7 +178,8 @@ async function renderProducts(filterData = null) {
     let displayData = filterData;
     if (!hasFilterData) {
         try {
-            displayData = await API.getProducts();
+            displayData = await API.getProducts({ limit: PRODUCT_PAGE_SIZE, skip: 0, forceRefresh: true });
+            hasMoreProducts = Array.isArray(displayData) && displayData.length === PRODUCT_PAGE_SIZE;
         } catch (error) {
             if (requestId !== productRenderRequestId) return;
             console.error("Ürünler yüklenemedi:", error);
@@ -181,6 +192,8 @@ async function renderProducts(filterData = null) {
             productListRetryTimer = setTimeout(() => renderProducts(), PRODUCT_LIST_RETRY_DELAY_MS);
             return;
         }
+    } else {
+        hasMoreProducts = false;
     }
 
     if (requestId !== productRenderRequestId) return;
@@ -191,6 +204,7 @@ async function renderProducts(filterData = null) {
     
     if (!Array.isArray(displayData) || displayData.length === 0) {
         list.innerHTML = '<p style="grid-column: span 3; text-align: center; color: #999;">Listelenecek ürün bulunamadı.</p>';
+        if (loadMoreWrapper) loadMoreWrapper.style.display = 'none';
         return;
     }
 
@@ -198,6 +212,8 @@ async function renderProducts(filterData = null) {
         const isFav = wishlist.includes(p._id);
         const images = getProductImages(p);
         const productName = p.name || 'Isimsiz Urun';
+        const safeProductName = typeof escapeHtml === 'function' ? escapeHtml(productName) : productName;
+        const safeCardImages = images.card.map((src) => typeof safeImageSrc === 'function' ? safeImageSrc(src) : src);
         const shouldPrioritize = index < 6;
         const loadingMode = shouldPrioritize ? 'eager' : 'lazy';
         const fetchPriority = shouldPrioritize ? 'high' : 'low';
@@ -237,18 +253,128 @@ async function renderProducts(filterData = null) {
                 </div>
 
                 <div class="image-slider">
-                    <img src="${images.card[0]}" class="p-img active" alt="${productName} 1" loading="${loadingMode}" decoding="async" fetchpriority="${fetchPriority}">
-                    <img data-src="${images.card[1]}" class="p-img" alt="${productName} 2" loading="lazy" decoding="async" fetchpriority="low">
-                    <img data-src="${images.card[2]}" class="p-img" alt="${productName} 3" loading="lazy" decoding="async" fetchpriority="low">
+                    <img src="${safeCardImages[0]}" class="p-img active" alt="${safeProductName} 1" loading="${loadingMode}" decoding="async" fetchpriority="${fetchPriority}">
+                    <img data-src="${safeCardImages[1]}" class="p-img" alt="${safeProductName} 2" loading="lazy" decoding="async" fetchpriority="low">
+                    <img data-src="${safeCardImages[2]}" class="p-img" alt="${safeProductName} 3" loading="lazy" decoding="async" fetchpriority="low">
                 </div>
 
                 <div class="product-info">
-                    <h3>${productName}</h3>
+                    <h3>${safeProductName}</h3>
                     <div class="price">${formatProductPrice(p.price)}</div>
                 </div>
             </div>`;
     }).join('');
+
+    if (isPaginatedFetch) {
+        currentProductPage = 1;
+    }
+
+    syncLoadMoreVisibility();
 }
+
+function syncLoadMoreVisibility() {
+    const loadMoreWrapper = document.getElementById('product-list-load-more');
+    if (!loadMoreWrapper) return;
+
+    const shouldShow = !activeProductFilterData && hasMoreProducts;
+    loadMoreWrapper.style.display = shouldShow ? 'block' : 'none';
+}
+
+async function loadMoreProducts() {
+    const list = document.getElementById('product-list');
+    const button = document.getElementById('load-more-products-btn');
+    if (!list || !button || activeProductFilterData || !hasMoreProducts) return;
+
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = 'YUKLENIYOR...';
+
+    try {
+        const nextProducts = await API.getProducts({
+            limit: PRODUCT_PAGE_SIZE,
+            skip: currentProductPage * PRODUCT_PAGE_SIZE,
+            forceRefresh: true
+        });
+
+        if (!Array.isArray(nextProducts) || nextProducts.length === 0) {
+            hasMoreProducts = false;
+            syncLoadMoreVisibility();
+            return;
+        }
+
+        const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
+        const role = sessionStorage.getItem('userRole');
+        const isAdmin = role === 'admin' || role === 'developer';
+        const startIndex = list.querySelectorAll('.product-card').length;
+
+        const cardsHtml = nextProducts.map((p, offset) => {
+            const isFav = wishlist.includes(p._id);
+            const images = getProductImages(p);
+            const productName = p.name || 'Isimsiz Urun';
+            const safeProductName = typeof escapeHtml === 'function' ? escapeHtml(productName) : productName;
+            const safeCardImages = images.card.map((src) => typeof safeImageSrc === 'function' ? safeImageSrc(src) : src);
+            const absoluteIndex = startIndex + offset;
+            const shouldPrioritize = absoluteIndex < 6;
+            const loadingMode = shouldPrioritize ? 'eager' : 'lazy';
+            const fetchPriority = shouldPrioritize ? 'high' : 'low';
+            const adminTrigger = (isAdmin && !isEditMode)
+                ? `<div class="admin-edit-trigger" onclick="event.stopPropagation(); openEditPanel('${p._id}')"><i class="fas fa-ellipsis-v"></i></div>`
+                : '';
+            const deleteTrigger = (isAdmin && isEditMode)
+                ? `<div class="admin-delete-trigger" onclick="event.stopPropagation(); deleteProductQuick('${p._id}')" title="Ürünü Sil"><i class="fas fa-times"></i></div>`
+                : '';
+
+            return `
+                <div class="product-card"
+                     draggable="${isEditMode}"
+                     ondragstart="handleDragStart(${absoluteIndex})"
+                     ondragover="event.preventDefault()"
+                     ondrop="handleDrop(${absoluteIndex})"
+                     onmousemove="handleProductHover(event, this)"
+                     onmouseleave="resetProductHover(this)"
+                     onclick="handleProductAction(event, '${p._id}')">
+
+                    ${adminTrigger}
+                    ${deleteTrigger}
+
+                    <div class="card-actions">
+                        <button class="action-btn" onclick="event.stopPropagation(); toggleWishlist('${p._id}')">
+                            <i class="${isFav ? 'fas' : 'far'} fa-heart" style="${isFav ? 'color:#d4af37' : ''}"></i>
+                        </button>
+                        <button class="action-btn" onclick="event.stopPropagation(); addToCart('${p._id}')">
+                            <i class="fas fa-shopping-bag"></i>
+                        </button>
+                    </div>
+
+                    <div class="image-slider">
+                        <img src="${safeCardImages[0]}" class="p-img active" alt="${safeProductName} 1" loading="${loadingMode}" decoding="async" fetchpriority="${fetchPriority}">
+                        <img data-src="${safeCardImages[1]}" class="p-img" alt="${safeProductName} 2" loading="lazy" decoding="async" fetchpriority="low">
+                        <img data-src="${safeCardImages[2]}" class="p-img" alt="${safeProductName} 3" loading="lazy" decoding="async" fetchpriority="low">
+                    </div>
+
+                    <div class="product-info">
+                        <h3>${safeProductName}</h3>
+                        <div class="price">${formatProductPrice(p.price)}</div>
+                    </div>
+                </div>`;
+        }).join('');
+
+        list.insertAdjacentHTML('beforeend', cardsHtml);
+        currentProductPage += 1;
+        hasMoreProducts = nextProducts.length === PRODUCT_PAGE_SIZE;
+        syncLoadMoreVisibility();
+    } catch (error) {
+        console.error('Daha fazla ürün yüklenemedi:', error);
+        if (typeof showToast === 'function') {
+            showToast('Daha fazla ürün yüklenemedi');
+        }
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
+
+window.loadMoreProducts = loadMoreProducts;
 
 window.retryCollectionLoad = retryCollectionLoad;
 
@@ -352,9 +478,15 @@ async function openDetailModal(id) {
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
     const isFav = wishlist.includes(p._id);
     const images = getProductImages(p);
+    const safeProductName = typeof escapeHtml === 'function' ? escapeHtml(p.name || 'Isimsiz Urun') : (p.name || 'Isimsiz Urun');
+    const safeCategory = typeof escapeHtml === 'function' ? escapeHtml(p.category || 'ÖZEL TASARIM') : (p.category || 'ÖZEL TASARIM');
+    const safeDescription = typeof escapeHtml === 'function'
+        ? escapeHtml(p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.')
+        : (p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.');
+    const safeGalleryImages = images.gallery.map((src) => typeof safeImageSrc === 'function' ? safeImageSrc(src) : src);
 
     currentGalleryIndex = 0;
-    currentGalleryImages = images.gallery;
+    currentGalleryImages = safeGalleryImages;
 
     content.innerHTML = `
         <div class="gallery-container">
@@ -364,7 +496,7 @@ async function openDetailModal(id) {
 
             <div class="detail-gallery">
                 <div class="main-img-wrapper">
-                    <img src="${images.gallery[0]}" id="mainDetailImg" class="main-detail-img" alt="Urun Resmi">
+                    <img src="${currentGalleryImages[0]}" id="mainDetailImg" class="main-detail-img" alt="${safeProductName}">
                     
                     <button class="gallery-nav-btn gallery-prev" onclick="prevGalleryImage()">
                         <i class="fas fa-chevron-left"></i>
@@ -383,9 +515,9 @@ async function openDetailModal(id) {
             </div>
 
             <div class="detail-info">
-                <span class="category">${p.category || 'ÖZEL TASARIM'}</span>
-                <h2>${p.name || 'Isimsiz Urun'}</h2>
-                <p class="desc">${p.description || 'Que Jewelry kalitesiyle özenle tasarlanmıştır.'}</p>
+                <span class="category">${safeCategory}</span>
+                <h2>${safeProductName}</h2>
+                <p class="desc">${safeDescription}</p>
                 <div class="price-display">${formatProductPrice(p.price)}</div>
 
                 <div class="detail-buttons">
@@ -1018,7 +1150,7 @@ function toggleWishlist(id) {
 
 async function filterProducts() {
     let allProducts = [];
-    allProducts = await API.getProducts();
+    allProducts = await API.getProducts({ forceRefresh: true });
     
     const selectedCats = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value);
     const sortVal = document.getElementById('sortPrice').value;
@@ -1032,7 +1164,7 @@ async function filterProducts() {
         filtered.sort((a, b) => normalizePriceValue(b.price) - normalizePriceValue(a.price));
     }
 
-    renderProducts(filtered);
+    await renderProducts(filtered);
 
     if (isMobileViewport()) {
         const sidebar = document.querySelector('.filter-sidebar');

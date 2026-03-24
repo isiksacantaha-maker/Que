@@ -1,3 +1,28 @@
+window.escapeHtml = function(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
+window.safeImageSrc = function(value) {
+    const src = String(value || '').trim();
+    if (!src) return 'placeholder.jpg';
+
+    const isSafeRemote = /^(https?:)?\/\//i.test(src);
+    const isSafeRelative = /^(\/|\.\/|\.\.\/)/.test(src);
+    const isSafeFilename = /^[A-Za-z0-9._/-]+$/.test(src);
+    const isSafeDataImage = /^data:image\//i.test(src);
+
+    if (isSafeRemote || isSafeRelative || isSafeFilename || isSafeDataImage) {
+        return src;
+    }
+
+    return 'placeholder.jpg';
+};
+
 function getProductApiOrigins() {
     const seen = new Set();
     const origins = [];
@@ -198,19 +223,26 @@ async function renderWishlist() {
         const product = allProducts.find(p => p._id === id);
         if (!product) return '';
 
+        const safeName = typeof escapeHtml === 'function' ? escapeHtml(product.name) : String(product.name || '');
+        const safeCategory = typeof escapeHtml === 'function' ? escapeHtml(product.category) : String(product.category || '');
+        const safeDescription = typeof escapeHtml === 'function' ? escapeHtml(product.description) : String(product.description || '');
+        const imageSrc = typeof safeImageSrc === 'function'
+            ? safeImageSrc(product.imgs && product.imgs[0] ? product.imgs[0] : 'placeholder.jpg')
+            : (product.imgs && product.imgs[0] ? product.imgs[0] : 'placeholder.jpg');
+
         return `
             <div class="product-card">
                 <div class="img-box">
-                    <img src="${product.imgs && product.imgs[0] ? product.imgs[0] : 'placeholder.jpg'}" alt="${product.name}">
+                    <img src="${imageSrc}" alt="${safeName}">
                     <button class="remove-heart" onclick="removeFromWishlist('${product._id}')" title="Beğendiklerden Çıkar">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 <div class="product-info">
-                    <h4>${product.name}</h4>
-                    <p style="color: #999; font-size: 12px; margin: 5px 0;">${product.category}</p>
+                    <h4>${safeName}</h4>
+                    <p style="color: #999; font-size: 12px; margin: 5px 0;">${safeCategory}</p>
                     <p class="price">${product.price.toLocaleString('tr-TR')} TL</p>
-                    <p style="color: #666; font-size: 13px; margin-top: 8px;">${product.description}</p>
+                    <p style="color: #666; font-size: 13px; margin-top: 8px;">${safeDescription}</p>
                     <button class="add-to-cart-small" onclick="addToCart('${product._id}')">
                         <i class="fas fa-shopping-bag"></i> SEPETE EKLE
                     </button>
@@ -256,12 +288,18 @@ async function renderCart() {
         const product = allProducts.find(p => p._id === cartItem.id);
         if (!product) return '';
 
+        const safeName = typeof escapeHtml === 'function' ? escapeHtml(product.name) : String(product.name || '');
+        const safeCategory = typeof escapeHtml === 'function' ? escapeHtml(product.category) : String(product.category || '');
+        const imageSrc = typeof safeImageSrc === 'function'
+            ? safeImageSrc(product.imgs && product.imgs[0] ? product.imgs[0] : 'placeholder.jpg')
+            : (product.imgs && product.imgs[0] ? product.imgs[0] : 'placeholder.jpg');
+
         return `
             <div class="cart-item">
-    <img src="${product.imgs && product.imgs[0] ? product.imgs[0] : 'placeholder.jpg'}" class="item-img" alt="${product.name}">
+    <img src="${imageSrc}" class="item-img" alt="${safeName}">
     <div class="item-info">
-        <h4>${product.name}</h4>
-        <p>${product.category}</p>
+        <h4>${safeName}</h4>
+        <p>${safeCategory}</p>
         <p class="item-price">${product.price.toLocaleString('tr-TR')} TL</p>
         <div class="qty-control">
             <button class="qty-btn" onclick="decreaseQty(${idx})" title="Azalt">−</button>
@@ -604,8 +642,10 @@ function processOfflinePayment(orderStatus, extraFee = 0) {
 // Sipariş oluşturma işlemini merkezileştiren fonksiyon
 async function createOrder(status, extraFee = 0) {
     const cart = JSON.parse(sessionStorage.getItem('que_cart')) || [];
-    let allProducts = [];
-    allProducts = await API.getProducts();
+    if (!cart.length) {
+        alert('Sepetinizde ürün bulunmuyor.');
+        return;
+    }
     
     const shippingInfo = JSON.parse(sessionStorage.getItem('que_shipping_info')) || {};
     const userEmail = sessionStorage.getItem('currentUserEmail') || 'misafir'; // E-postayı al
@@ -613,31 +653,23 @@ async function createOrder(status, extraFee = 0) {
     const orderId = '#QUE-' + Math.floor(100000 + Math.random() * 900000);
     const orderDate = new Date().toLocaleDateString('tr-TR');
 
-    let subtotal = 0;
-    let orderItems = [];
+    const orderItems = cart
+        .map(cartItem => ({
+            productId: String(cartItem?.id || '').trim(),
+            quantity: Math.max(1, Number.parseInt(cartItem?.quantity, 10) || 1)
+        }))
+        .filter(item => item.productId);
 
-    cart.forEach(cartItem => {
-        const p = allProducts.find(item => item._id === cartItem.id);
-        if (p) {
-            subtotal += p.price * (cartItem.quantity || 1);
-            orderItems.push({
-                productId: p._id,
-                name: p.name,
-                quantity: cartItem.quantity || 1,
-                price: p.price,
-                img: (Array.isArray(p.imgs) && p.imgs[0]) ? p.imgs[0] : 'placeholder.jpg'
-            });
-        }
-    });
-
-    const shippingFee = subtotal >= 3000 ? 0 : (subtotal > 0 ? 100 : 0);
-    const totalAmount = subtotal + shippingFee + extraFee;
+    if (!orderItems.length) {
+        alert('Sipariş için geçerli ürün bulunamadı.');
+        return;
+    }
 
     const newOrder = {
         id: orderId,
         date: orderDate,
         items: orderItems,
-        total: totalAmount,
+        extraFee: Number(extraFee) || 0,
         status: status, // Dinamik durum
         userEmail: userEmail, // Siparişe kullanıcı e-postasını ekle
         shippingInfo: {
@@ -703,10 +735,11 @@ function showToast(message, duration = 3000) {
 
     const toast = document.createElement('div');
     toast.className = 'premium-toast';
+    const safeMessage = typeof escapeHtml === 'function' ? escapeHtml(message) : String(message || '');
     toast.innerHTML = `
         <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
             <div style="font-size: 18px; flex-shrink: 0;">✨</div>
-            <div style="flex: 1; line-height: 1.4;">${message}</div>
+            <div style="flex: 1; line-height: 1.4;">${safeMessage}</div>
         </div>
     `;
     container.appendChild(toast);
