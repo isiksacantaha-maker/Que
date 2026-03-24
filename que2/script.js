@@ -1,14 +1,88 @@
+function getProductApiOrigins() {
+    const seen = new Set();
+    const origins = [];
+    const candidates = [];
+
+    if (typeof API_URL === 'string' && API_URL.trim()) {
+        candidates.push(API_URL);
+    }
+
+    if (Array.isArray(API_URL_FALLBACKS)) {
+        candidates.push(...API_URL_FALLBACKS);
+    }
+
+    candidates.forEach((baseUrl) => {
+        try {
+            const origin = new URL(baseUrl, window.location.origin).origin;
+            if (seen.has(origin)) return;
+            seen.add(origin);
+            origins.push(origin);
+        } catch (_) {
+            // Geçersiz URL adaylarını görmezden gel.
+        }
+    });
+
+    return origins;
+}
+
+function primeApiConnections() {
+    const head = document.head;
+    if (!head) return;
+
+    getProductApiOrigins().forEach((origin) => {
+        if (!origin || origin === window.location.origin) return;
+
+        const preconnectSelector = `link[data-api-preconnect="${origin}"]`;
+        if (!head.querySelector(preconnectSelector)) {
+            const preconnect = document.createElement('link');
+            preconnect.rel = 'preconnect';
+            preconnect.href = origin;
+            preconnect.crossOrigin = 'anonymous';
+            preconnect.dataset.apiPreconnect = origin;
+            head.appendChild(preconnect);
+        }
+
+        const dnsPrefetchSelector = `link[data-api-dns-prefetch="${origin}"]`;
+        if (!head.querySelector(dnsPrefetchSelector)) {
+            const dnsPrefetch = document.createElement('link');
+            dnsPrefetch.rel = 'dns-prefetch';
+            dnsPrefetch.href = origin;
+            dnsPrefetch.dataset.apiDnsPrefetch = origin;
+            head.appendChild(dnsPrefetch);
+        }
+    });
+}
+
+function warmProductsCache() {
+    if (!window.API || typeof API.getProducts !== 'function') return;
+    window.setTimeout(() => {
+        API.getProducts().catch(() => {});
+    }, 0);
+}
+
+window.ensureProductCardImagesLoaded = function(card) {
+    if (!card) return;
+
+    const deferredImages = card.querySelectorAll('img[data-src]');
+    deferredImages.forEach((img) => {
+        if (img.dataset.loaded === '1') return;
+
+        const nextSrc = img.dataset.src;
+        if (!nextSrc) return;
+
+        img.src = nextSrc;
+        img.dataset.loaded = '1';
+        img.removeAttribute('data-src');
+    });
+};
+
+primeApiConnections();
+
 // SAYFA YÜKLENDİĞİNDE ÇALIŞTIR
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof updateCartCount === "function") updateCartCount();
     initNetworkStatusBanner();
-
-    // Ürün gösteren sayfalarda ilk render gecikmesini azaltmak için ön ısıtma.
-    if (window.API && typeof API.getProducts === 'function') {
-        setTimeout(() => {
-            API.getProducts().catch(() => {});
-        }, 0);
-    }
+    warmProductsCache();
 });
 
 function initNetworkStatusBanner() {

@@ -20,6 +20,7 @@
     "call-bind-apply-helpers": "^1.0.2",
     "call-bound": "^1.0.4",
     "chokidar": "^3.6.0",
+    "compression": "^1.8.1",
     "concat-stream": "^2.0.0",
     "content-disposition": "^1.0.1",
     "content-type": "^1.0.5",
@@ -37,8 +38,8 @@
     "es-object-atoms": "^1.1.1",
     "escape-html": "^1.0.3",
     "etag": "^1.8.1",
-    "express-rate-limit": "^7.5.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
     "fill-range": "^7.1.1",
     "finalhandler": "^2.1.1",
     "forwarded": "^0.2.0",
@@ -56,13 +57,13 @@
     "iconv-lite": "^0.7.2",
     "ignore-by-default": "^1.0.1",
     "inherits": "^2.0.4",
-      "jsonwebtoken": "^9.0.2",
     "ipaddr.js": "^1.9.1",
     "is-binary-path": "^2.1.0",
     "is-extglob": "^2.1.1",
     "is-glob": "^4.0.3",
     "is-number": "^7.0.0",
     "is-promise": "^4.0.0",
+    "jsonwebtoken": "^9.0.2",
     "kareem": "^3.2.0",
     "math-intrinsics": "^1.1.0",
     "media-typer": "^1.1.0",
@@ -130,11 +131,10 @@
     "whatwg-url": "^14.2.0",
     "wrappy": "^1.0.2"
   },
-  "devDependencies": {},
- "scripts": {
-  "start": "node que2/server.js",
-  "dev": "nodemon que2/server.js"
-},
+  "scripts": {
+    "start": "node que2/server.js",
+    "dev": "nodemon que2/server.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/isiksacantaha-maker/Que.git"

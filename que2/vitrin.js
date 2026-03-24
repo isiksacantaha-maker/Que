@@ -238,8 +238,8 @@ async function renderProducts(filterData = null) {
 
                 <div class="image-slider">
                     <img src="${images.card[0]}" class="p-img active" alt="${productName} 1" loading="${loadingMode}" decoding="async" fetchpriority="${fetchPriority}">
-                    <img src="${images.card[1]}" class="p-img" alt="${productName} 2" loading="lazy" decoding="async" fetchpriority="low">
-                    <img src="${images.card[2]}" class="p-img" alt="${productName} 3" loading="lazy" decoding="async" fetchpriority="low">
+                    <img data-src="${images.card[1]}" class="p-img" alt="${productName} 2" loading="lazy" decoding="async" fetchpriority="low">
+                    <img data-src="${images.card[2]}" class="p-img" alt="${productName} 3" loading="lazy" decoding="async" fetchpriority="low">
                 </div>
 
                 <div class="product-info">
@@ -1045,6 +1045,10 @@ async function filterProducts() {
 }
 
 function handleProductHover(e, card) {
+    if (typeof ensureProductCardImagesLoaded === 'function') {
+        ensureProductCardImagesLoaded(card);
+    }
+
     const slider = card.querySelector('.image-slider');
     if (!slider) return;
 
