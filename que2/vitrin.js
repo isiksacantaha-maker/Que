@@ -178,7 +178,7 @@ async function renderProducts(filterData = null) {
     let displayData = filterData;
     if (!hasFilterData) {
         try {
-            displayData = await API.getProducts({ limit: PRODUCT_PAGE_SIZE, skip: 0, forceRefresh: true });
+            displayData = await API.getProducts({ limit: PRODUCT_PAGE_SIZE, skip: 0 });
             hasMoreProducts = Array.isArray(displayData) && displayData.length === PRODUCT_PAGE_SIZE;
         } catch (error) {
             if (requestId !== productRenderRequestId) return;

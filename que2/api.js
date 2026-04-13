@@ -425,6 +425,35 @@ const API = {
             return fetchProductsWithFallback(staleProducts);
         }
 
+        // İlk sayfa için stale-while-revalidate ve in-flight request paylaşımı.
+        // Bu sayede dönüş ziyaretlerinde cache'den anında yüklenir;
+        // soğuk başlangıçta warmProductsCache ile aynı tek istek paylaşılır.
+        if (skip === 0 && !forceRefresh) {
+            // 1. Geçerli cache varsa anında döndür
+            const cachedProducts = readProductCache();
+            if (cachedProducts) {
+                scheduleBackgroundProductSync();
+                return cachedProducts.slice(0, limit);
+            }
+            // 2. Süresi dolmuş cache varsa yine de anında göster, arka planda güncelle
+            const staleProducts = readProductCache({ allowExpired: true });
+            if (staleProducts && staleProducts.length > 0) {
+                scheduleBackgroundProductSync();
+                return staleProducts.slice(0, limit);
+            }
+            // 3. warmProductsCache'nin başlattığı istek uçuştaysa onu bekle (tek HTTP isteği)
+            if (productsInFlightPromise) {
+                try {
+                    const allProducts = await productsInFlightPromise;
+                    if (Array.isArray(allProducts) && allProducts.length > 0) {
+                        return allProducts.slice(0, limit);
+                    }
+                } catch (_) {
+                    // Hata durumunda aşağıda kendi isteğini yapar
+                }
+            }
+        }
+
         return fetchPaginatedProducts(limit, skip);
     },
 

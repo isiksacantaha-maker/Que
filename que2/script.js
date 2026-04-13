@@ -80,9 +80,9 @@ function primeApiConnections() {
 
 function warmProductsCache() {
     if (!window.API || typeof API.getProducts !== 'function') return;
-    window.setTimeout(() => {
-        API.getProducts().catch(() => {});
-    }, 0);
+    // setTimeout olmadan çağır: DOMContentLoaded öncesinde productsInFlightPromise'i
+    // set eder, böylece vitrin.js renderProducts() aynı isteği paylaşır (tek HTTP isteği).
+    API.getProducts().catch(() => {});
 }
 
 window.ensureProductCardImagesLoaded = function(card) {
@@ -102,12 +102,14 @@ window.ensureProductCardImagesLoaded = function(card) {
 };
 
 primeApiConnections();
+// Scriptler parse edilir edilmez API'yi ısıt; DOMContentLoaded bekleme.
+// Böylece vitrin.js'nin renderProducts() aynı in-flight promise'i bulur.
+warmProductsCache();
 
 // SAYFA YÜKLENDİĞİNDE ÇALIŞTIR
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof updateCartCount === "function") updateCartCount();
     initNetworkStatusBanner();
-    warmProductsCache();
 });
 
 function initNetworkStatusBanner() {
