@@ -172,9 +172,46 @@ function initVideoScroll() {
 
     if (video.readyState >= 1) markReady();
 
+    // Erişilebilirlik: videonun scroll kontrolünü durdur/başlat butonu
+    let scrollVideoPaused = false;
+    const pauseBtn = document.createElement('button');
+    pauseBtn.id = 'video-scroll-toggle';
+    pauseBtn.setAttribute('aria-label', 'Videoyu durdur');
+    pauseBtn.textContent = 'Pause';
+    pauseBtn.style.cssText = [
+        'position:absolute',
+        'bottom:24px',
+        'right:24px',
+        'z-index:10',
+        'width:48px',
+        'height:48px',
+        'border-radius:50%',
+        'border:none',
+        'background:rgba(0,0,0,0.5)',
+        'color:#fff',
+        'font-size:13px',
+        'font-weight:600',
+        'cursor:pointer',
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'backdrop-filter:blur(6px)'
+    ].join(';');
+
+    pauseBtn.addEventListener('click', () => {
+        scrollVideoPaused = !scrollVideoPaused;
+        pauseBtn.textContent = scrollVideoPaused ? 'Play' : 'Pause';
+        pauseBtn.setAttribute('aria-label', scrollVideoPaused ? 'Videoyu başlat' : 'Videoyu durdur');
+        if (!scrollVideoPaused) updateVideo();
+    });
+
+    const stickyContainer = videoWrapper.querySelector('.sticky-video-container') || videoWrapper;
+    stickyContainer.style.position = 'relative';
+    stickyContainer.appendChild(pauseBtn);
+
     // Performans için requestAnimationFrame kullanıyoruz
     window.addEventListener('scroll', () => {
-        window.requestAnimationFrame(updateVideo);
+        if (!scrollVideoPaused) window.requestAnimationFrame(updateVideo);
     });
 
     window.addEventListener('resize', () => {

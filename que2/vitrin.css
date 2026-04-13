@@ -1,6 +1,11 @@
 /* ==========================================================================
    1. GENEL SAYFA YAPISI VE LAYOUT
    ========================================================================== */
+:root {
+    --brand-gold: #d4af37;
+    --brand-gold-mid: #c5a059;
+}
+
 body {
     background-color: #fcfcfc;
     margin: 0;
@@ -39,12 +44,12 @@ body {
     background: rgba(212,175,55,0.05);
     padding: 20px;
     border-radius: 20px;
-    border: 2px dashed #d4af37;
+    border: 2px dashed var(--brand-gold);
 }
 
 .product-grid.edit-active .product-card {
     cursor: move;
-    border: 2px solid #d4af37;
+    border: 2px solid var(--brand-gold);
     background: linear-gradient(135deg, #fff 0%, #fffbf0 100%);
 }
 
@@ -218,7 +223,7 @@ body {
     transition: color 0.3s;
 }
 
-.checkbox-group label:hover { color: #c5a059; }
+.checkbox-group label:hover { color: var(--brand-gold-mid); }
 
 .checkbox-group input[type="checkbox"] {
     width: 18px; height: 18px;
@@ -250,7 +255,7 @@ body {
 .product-card:hover .card-actions { opacity: 1; }
 
 .action-btn {
-    width: 40px; height: 40px;
+    width: 48px; height: 48px;
     border-radius: 50%;
     border: 1px solid rgba(255,255,255,0.3);
     background: rgba(255,255,255,0.4);
@@ -498,13 +503,13 @@ body {
 
 .btn-fav:hover {
     background: #fff;
-    border-color: #d4af37;
-    color: #d4af37;
+    border-color: var(--brand-gold);
+    color: var(--brand-gold);
 }
 
 .btn-fav.active {
-    background: #d4af37;
-    border-color: #d4af37;
+    background: var(--brand-gold);
+    border-color: var(--brand-gold);
     color: #fff;
 }
 
@@ -591,7 +596,7 @@ body {
 
 /* UPLOAD ZONE */
 .upload-zone {
-    border: 2px dashed #d4af37;
+    border: 2px dashed var(--brand-gold);
     padding: 30px;
     border-radius: 20px;
     margin-bottom: 30px;
@@ -608,7 +613,7 @@ body {
 
 .upload-zone i {
     font-size: 32px;
-    color: #d4af37;
+    color: var(--brand-gold);
     margin-bottom: 10px;
 }
 
@@ -640,7 +645,7 @@ body {
 }
 
 .preview-wrapper:hover {
-    border-color: #d4af37;
+    border-color: var(--brand-gold);
     box-shadow: 0 4px 12px rgba(212,175,55,0.2);
 }
 
@@ -728,7 +733,7 @@ body {
 }
 
 .edit-input:focus {
-    border-color: #d4af37;
+    border-color: var(--brand-gold);
     background: #fff;
     box-shadow: 0 0 0 3px rgba(212,175,55,0.1);
 }
@@ -758,7 +763,7 @@ body {
 }
 
 .edit-select:focus {
-    border-color: #d4af37;
+    border-color: var(--brand-gold);
     background: #fff;
 }
 
@@ -1019,7 +1024,7 @@ body {
 }
 
 .admin-edit-trigger:hover {
-    background: #d4af37;
+    background: var(--brand-gold);
     transform: scale(1.15);
     box-shadow: 0 6px 20px rgba(212,175,55,0.5);
 }
@@ -1131,7 +1136,7 @@ body {
     }
 
     .filter-select:focus {
-        border-color: #d4af37;
+        border-color: var(--brand-gold);
         box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
     }
 
@@ -1161,7 +1166,7 @@ body {
     .checkbox-group input[type="checkbox"] {
         width: 16px;
         height: 16px;
-        accent-color: #d4af37;
+        accent-color: var(--brand-gold);
     }
     
     /* MOBİL DETAY MODAL */

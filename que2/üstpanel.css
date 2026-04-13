@@ -3,6 +3,11 @@
    USTPANEL.CSS - PREMIUM BUTIK STANDART NAVIGASYON
    ========================================================================== */
 
+:root {
+    --brand-gold: #d4af37;
+    --brand-gold-mid: #c5a059;
+}
+
 /* NAVBAR ANA YAPI */
 .navbar {
     position: fixed;
@@ -77,14 +82,14 @@
 .nav-right .cart-badge {
     position: absolute;
     top: -2px;   /* Üstten hizalama */
-    right: -8px;  /* Sağdan hizalama */
-    background-color: #d4af37; /* Marka rengine uygun Gold/Altın tonu */
+    right: max(-6px, -0.4vw);  /* Sağdan hizalama */
+    background-color: var(--brand-gold); /* Marka rengine uygun Gold/Altın tonu */
     color: #000;
     font-size: 11px;
     font-weight: bold;
     font-family: Arial, sans-serif;
-    min-width: 18px;
-    height: 18px;
+    min-width: 24px;
+    height: 24px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -201,7 +206,7 @@ canvas {
 }
 
 .edit-input:focus {
-    border-color: #c5a059;
+    border-color: var(--brand-gold-mid);
     outline: none;
     box-shadow: 0 0 10px rgba(197, 160, 89, 0.1);
 }

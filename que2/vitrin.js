@@ -269,6 +269,11 @@ async function renderProducts(filterData = null) {
         currentProductPage = 1;
     }
 
+    // SEO: JSON-LD ItemList şeması enjekte et
+    if (Array.isArray(displayData) && displayData.length > 0) {
+        injectProductListJsonLd(displayData);
+    }
+
     syncLoadMoreVisibility();
 }
 
@@ -377,6 +382,46 @@ async function loadMoreProducts() {
 window.loadMoreProducts = loadMoreProducts;
 
 window.retryCollectionLoad = retryCollectionLoad;
+
+/* ==========================================================================
+   3. ADMİN MODU VE SIRALAMA (DRAG & DROP)
+function injectProductListJsonLd(products) {
+    try {
+        const existing = document.getElementById('jsonld-product-list');
+        if (existing) existing.remove();
+
+        const items = products.slice(0, 20).map((p, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            item: {
+                '@type': 'Product',
+                name: p.name || 'Isimsiz Ürün',
+                image: Array.isArray(p.imgs) && p.imgs[0] ? p.imgs[0] : undefined,
+                description: p.description || undefined,
+                offers: {
+                    '@type': 'Offer',
+                    priceCurrency: 'TRY',
+                    price: Number(p.price) || undefined,
+                    availability: 'https://schema.org/InStock',
+                    url: `https://quejew.com/vitrin.html?productId=${p._id}`
+                }
+            }
+        }));
+
+        const schema = {
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: 'Que Jewelry Koleksiyonu',
+            itemListElement: items
+        };
+
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.id = 'jsonld-product-list';
+        script.textContent = JSON.stringify(schema);
+        document.head.appendChild(script);
+    } catch (_) {}
+}
 
 /* ==========================================================================
    3. ADMİN MODU VE SIRALAMA (DRAG & DROP)
@@ -534,8 +579,41 @@ async function openDetailModal(id) {
 
     attachGallerySwipe();
 
+    // Erişilebilirlik: overlay'e dialog rolü + odak tuzakla
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', safeProductName);
     overlay.style.display = 'flex';
-    document.body.style.overflow = ''; 
+    document.body.style.overflow = '';
+
+    // Önceki focus noktasını sakla, kapattığında geri dön
+    overlay._previousFocus = document.activeElement;
+
+    // İlk odaklanabilir elemana focus taşı
+    const firstFocusable = content.querySelector('button, [tabindex]:not([tabindex="-1"])');
+    if (firstFocusable) firstFocusable.focus();
+
+    // Klavye nav: Tab tuzakla + Escape ile kapat
+    function trapFocus(event) {
+        if (event.key === 'Escape') {
+            closeDetailModal();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        const focusables = Array.from(
+            content.querySelectorAll('button:not([disabled]), [tabindex]:not([tabindex="-1"])')
+        ).filter(el => el.offsetParent !== null);
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (event.shiftKey) {
+            if (document.activeElement === first) { last.focus(); event.preventDefault(); }
+        } else {
+            if (document.activeElement === last) { first.focus(); event.preventDefault(); }
+        }
+    }
+    overlay._trapFocus = trapFocus;
+    overlay.addEventListener('keydown', trapFocus);
 }
 
 function selectGalleryImage(idx) {
@@ -583,7 +661,17 @@ function closeDetailModal() {
         return;
     }
 
-    document.getElementById('detail-overlay').style.display = 'none';
+    const overlay = document.getElementById('detail-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+        if (overlay._trapFocus) {
+            overlay.removeEventListener('keydown', overlay._trapFocus);
+            overlay._trapFocus = null;
+        }
+        if (overlay._previousFocus && typeof overlay._previousFocus.focus === 'function') {
+            overlay._previousFocus.focus();
+        }
+    }
     document.body.style.overflow = '';
 }
 

@@ -35,8 +35,8 @@ const ALLOWED_ORIGINS = [
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 mongoose.connect(MONGO_URI)
-  .then(() => console.log("✅ Başardık! MongoDB Atlas Bağlantısı Tamam."))
-  .catch((err) => console.log("❌ Bağlantı Hatası:", err));
+  .then(() => serverLog('info', 'MongoDB Atlas bağlantısı başarılı'))
+  .catch((err) => serverLog('error', 'MongoDB bağlantı hatası', { error: err.message }));
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -58,6 +58,21 @@ const apiLimiter = rateLimit({
     message: { error: 'Çok fazla istek gönderildi. Lütfen biraz sonra tekrar deneyin.' }
 });
 app.use('/api', apiLimiter);
+
+// Yapılandırılmış sunucu loglama (stderr + timestamp)
+function serverLog(level, message, meta = {}) {
+    const entry = JSON.stringify({
+        ts: new Date().toISOString(),
+        level,
+        message,
+        ...meta
+    });
+    if (level === 'error') {
+        process.stderr.write(entry + '\n');
+    } else {
+        process.stdout.write(entry + '\n');
+    }
+}
 
 const MAX_PRODUCT_IMAGES = 5;
 const MAX_ORDER_ITEMS = 50;
@@ -335,8 +350,12 @@ app.get('/api/products', async (req, res) => {
         if (limit !== null) query = query.limit(limit);
 
         const products = await query;
+        res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         res.json(products);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) {
+        serverLog('error', 'GET /api/products hatası', { error: err.message });
+        res.status(500).json({ error: 'Sunucu hatası' });
+    }
 });
 
 app.post('/api/products', requireAuth, requireAdmin, async (req, res) => {

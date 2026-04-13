@@ -101,6 +101,40 @@ window.ensureProductCardImagesLoaded = function(card) {
     });
 };
 
+// Ürün kartlarındaki data-src thumbnail resimlerini IntersectionObserver ile lazy-load et.
+// MutationObserver sayesinde vitrin.js/anasayfa.js değiştirilmeden çalışır.
+(function initCardImageObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    const imgObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            if (typeof window.ensureProductCardImagesLoaded === 'function') {
+                window.ensureProductCardImagesLoaded(entry.target);
+            }
+            imgObserver.unobserve(entry.target);
+        });
+    }, { rootMargin: '150px' });
+
+    const mutObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (!(node instanceof Element)) return;
+                if (node.classList.contains('product-card')) {
+                    imgObserver.observe(node);
+                }
+                node.querySelectorAll('.product-card').forEach(card => imgObserver.observe(card));
+            });
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        mutObserver.observe(document.body, { childList: true, subtree: true });
+        // Sayfa yüklendiğinde hâlihazırda var olan kartları da gözlemle
+        document.querySelectorAll('.product-card').forEach(card => imgObserver.observe(card));
+    });
+}());
+
 primeApiConnections();
 // Scriptler parse edilir edilmez API'yi ısıt; DOMContentLoaded bekleme.
 // Böylece vitrin.js'nin renderProducts() aynı in-flight promise'i bulur.
@@ -359,7 +393,16 @@ function removeFromCart(index) {
 async function updateCartTotal() {
     const cart = JSON.parse(sessionStorage.getItem('que_cart')) || [];
     let allProducts = [];
-    allProducts = await API.getProducts();
+    try {
+        allProducts = await API.getProducts();
+    } catch (_) {
+        // API erişilemiyorsa localStorage cache'inden yedek olarak oku
+        try {
+            const raw = localStorage.getItem('que_products_cache_v1');
+            const parsed = raw ? JSON.parse(raw) : null;
+            allProducts = Array.isArray(parsed?.products) ? parsed.products : [];
+        } catch (_) {}
+    }
     
     let subtotal = 0;
     cart.forEach(cartItem => {
@@ -575,7 +618,13 @@ function saveShippingInfo() {
     const city = document.getElementById('ship-city')?.value || '';
 
     if (!name || !surname || !phone || !address || !city) {
-        alert('Lütfen zorunlu alanları doldurunuz!');
+        const missing = [];
+        if (!name) missing.push('Ad');
+        if (!surname) missing.push('Soyad');
+        if (!phone) missing.push('Telefon');
+        if (!address) missing.push('Adres');
+        if (!city) missing.push('Şehir');
+        alert('Lütfen eksik alanları doldurunuz:\n• ' + missing.join('\n• '));
         return false;
     }
 
@@ -627,7 +676,14 @@ function processPayment() {
     const cart = JSON.parse(sessionStorage.getItem('que_cart')) || [];
 
     if (!name || !surname || !phone || !address || !city || cart.length === 0) {
-        alert('Lütfen teslimat bilgilerini eksiksiz doldurunuz ve sepetinizin boş olmadığından emin olunuz.');
+        const missing = [];
+        if (!name) missing.push('Ad');
+        if (!surname) missing.push('Soyad');
+        if (!phone) missing.push('Telefon');
+        if (!address) missing.push('Adres');
+        if (!city) missing.push('Şehir');
+        if (cart.length === 0) missing.push('Sepet boş');
+        alert('Lütfen aşağıdakileri kontrol ediniz:\n• ' + missing.join('\n• '));
         return;
     }
 
@@ -731,6 +787,9 @@ function showToast(message, duration = 3000) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'toast-container';
+        container.setAttribute('role', 'status');
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-atomic', 'false');
         container.style.cssText = `position: fixed; top: 140px; right: 20px; z-index: 10000; display: flex; flex-direction: column-reverse; gap: 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;`;
         document.body.appendChild(container);
     }
