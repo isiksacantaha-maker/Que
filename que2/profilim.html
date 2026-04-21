@@ -244,9 +244,6 @@
             <input type="password" id="login-pass" placeholder="••••••••">
         </div>
         <button type="button" class="btn-black" onclick="handleLogin()">GİRİŞ YAP</button>
-        <div class="auth-divider">veya</div>
-        <div id="google-login-slot" class="google-auth-slot"></div>
-        <div id="google-login-note" class="google-auth-note hidden">Google ile hızlı giriş yapabilirsiniz.</div>
         <div class="switch-text" onclick="showView('register-view')">Hesabınız yok mu? Kayıt Olun</div>
         <div class="switch-text" style="margin-top: 10px; color: #aaa;" onclick="showView('forgot-view')">Şifremi Unuttum?</div>
     </div>
@@ -270,9 +267,6 @@
             <input type="password" id="reg-pass-confirm" placeholder="Şifrenizi onaylayın">
         </div>
         <button class="btn-black" onclick="handleRegister()">KAYIT OL</button>
-        <div class="auth-divider">veya</div>
-        <div id="google-register-slot" class="google-auth-slot"></div>
-        <div id="google-register-note" class="google-auth-note hidden">Google hesabınızla saniyeler içinde üye olun.</div>
         <div class="switch-text" onclick="showView('login-view')">Zaten üye misiniz? Giriş Yapın</div>
     </div>
 
@@ -296,12 +290,9 @@
     </div>
 
 
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="api.js"></script>
     <script>
         // --- DEĞİŞKENLER VE HAVUZ ---
-        let googleAuthInitialized = false;
-
         function persistUserSession(userData) {
             sessionStorage.setItem('isLoggedIn', 'true');
             sessionStorage.setItem('userRole', userData.role);
@@ -310,63 +301,6 @@
             if (userData.token) sessionStorage.setItem('authToken', userData.token);
             if (userData.phone) sessionStorage.setItem('userPhone', userData.phone);
             if (userData.address) sessionStorage.setItem('userAddress', userData.address);
-        }
-
-        async function initGoogleAuth() {
-            if (googleAuthInitialized || !window.google?.accounts?.id) return;
-
-            try {
-                const config = await API.getPublicConfig();
-                if (!config?.googleClientId) return;
-
-                window.google.accounts.id.initialize({
-                    client_id: config.googleClientId,
-                    callback: handleGoogleCredential
-                });
-
-                ['google-login-slot', 'google-register-slot'].forEach((slotId) => {
-                    const slot = document.getElementById(slotId);
-                    if (!slot) return;
-
-                    slot.innerHTML = '';
-                    window.google.accounts.id.renderButton(slot, {
-                        theme: 'outline',
-                        size: 'large',
-                        text: 'continue_with',
-                        shape: 'pill',
-                        width: 320
-                    });
-                });
-
-                ['google-login-note', 'google-register-note'].forEach((noteId) => {
-                    document.getElementById(noteId)?.classList.remove('hidden');
-                });
-
-                googleAuthInitialized = true;
-            } catch (error) {
-                console.error('Google auth baslatilamadi:', error);
-            }
-        }
-
-        async function handleGoogleCredential(response) {
-            if (!response?.credential) {
-                alert('Google girişi alınamadı.');
-                return;
-            }
-
-            try {
-                const userData = await API.loginWithGoogle(response.credential);
-                persistUserSession(userData);
-                alert("Hoş geldiniz, " + userData.name);
-
-                if (userData.role === 'admin' || userData.role === 'developer') {
-                    window.location.href = 'adminekrani.html';
-                } else {
-                    window.location.href = 'girissonrasıprofilim.html';
-                }
-            } catch (error) {
-                alert('Google giriş hatası: ' + error.message);
-            }
         }
 
         // Görünüm Değiştirme
@@ -479,12 +413,6 @@
             }
         }
 
-        // Google GSI kütüphanesi hazır olduğunda tetiklenir
-        window.onGoogleLibraryLoad = initGoogleAuth;
-        // Fallback: kütüphane DOM'dan önce yüklendiyse
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.google?.accounts?.id) initGoogleAuth();
-        });
     </script>
 </body>
 </html>
