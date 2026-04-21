@@ -21,7 +21,7 @@ function initApp() {
 }
 
 function checkAdminAccess() {
-    const isAdmin = sessionStorage.getItem('userRole') === 'admin';
+    const isAdmin = ['admin', 'developer'].includes(sessionStorage.getItem('userRole'));
     const adminBar = document.getElementById('admin-edit-bar');
     const adminTools = document.getElementById('admin-only-tools');
     
@@ -54,7 +54,7 @@ async function renderProducts(filterData = null) {
     }
 
     const wishlist = JSON.parse(sessionStorage.getItem('que_wishlist')) || [];
-    const isAdmin = sessionStorage.getItem('userRole') === 'admin';
+    const isAdmin = ['admin', 'developer'].includes(sessionStorage.getItem('userRole'));
     
     const displayData = filterData || allProducts;
     

@@ -9,6 +9,10 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASS = process.env.ADMIN_PASS;
+const DEVELOPER_EMAIL = process.env.DEVELOPER_EMAIL;
+const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
 
 // MongoDB Bağlantısı
 // Güvenlik için bağlantı adresi .env dosyasından alınır
@@ -218,8 +222,12 @@ app.post('/api/auth/login', async (req, res) => {
         const { email, pass } = req.body;
 
         // Admin Kontrolü (.env dosyasından güvenli bir şekilde)
-        if (email === process.env.ADMIN_EMAIL && pass === process.env.ADMIN_PASS) {
+        if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
             return res.json({ role: 'admin', name: 'Yönetici', email: email });
+        }
+
+        if (DEVELOPER_EMAIL && DEVELOPER_PASS && email === DEVELOPER_EMAIL && pass === DEVELOPER_PASS) {
+            return res.json({ role: 'developer', name: 'Yazılımcı', email: email });
         }
 
         const user = await User.findOne({ email });
