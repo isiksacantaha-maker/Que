@@ -422,7 +422,12 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', initGoogleAuth);
+        // Google GSI kütüphanesi hazır olduğunda tetiklenir
+        window.onGoogleLibraryLoad = initGoogleAuth;
+        // Fallback: kütüphane DOM'dan önce yüklendiyse
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.google?.accounts?.id) initGoogleAuth();
+        });
     </script>
 </body>
 </html>
