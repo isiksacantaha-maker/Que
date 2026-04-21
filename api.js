@@ -7,6 +7,24 @@ const API_URL = (() => {
     return `${window.location.origin}/api`;
 })();
 
+async function readApiResponse(response, fallbackMessage) {
+    const rawText = await response.text();
+    let data = null;
+
+    try {
+        data = rawText ? JSON.parse(rawText) : null;
+    } catch (_) {
+        data = null;
+    }
+
+    if (!response.ok) {
+        const message = data?.error || data?.message || (rawText && !rawText.startsWith('<') ? rawText : fallbackMessage);
+        throw new Error(message || fallbackMessage);
+    }
+
+    return data;
+}
+
 const API = {
     // --- ÜRÜN İŞLEMLERİ ---
 
@@ -59,17 +77,17 @@ const API = {
 
     // --- KULLANICI & GİRİŞ İŞLEMLERİ ---
 
-    async login(email, pass) {
+    async login(emailOrCredentials, pass) {
+        const credentials = typeof emailOrCredentials === "object"
+            ? emailOrCredentials
+            : { email: emailOrCredentials, pass };
+
         const response = await fetch(`${API_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, pass })
+            body: JSON.stringify(credentials)
         });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Giriş başarısız");
-        }
-        return await response.json();
+        return await readApiResponse(response, "Giriş başarısız");
     },
 
     async register(userData) {
@@ -78,11 +96,16 @@ const API = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData)
         });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Kayıt başarısız");
-        }
-        return await response.json();
+        return await readApiResponse(response, "Kayıt başarısız");
+    },
+
+    async requestPasswordReset(data) {
+        const response = await fetch(`${API_URL}/auth/forgot-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        return await readApiResponse(response, "Şifre yenileme işlemi başarısız");
     },
 
     async changePassword(data) {
@@ -91,7 +114,6 @@ const API = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         });
-        if (!response.ok) throw new Error("Şifre değiştirilemedi");
-        return await response.json();
+        return await readApiResponse(response, "Şifre değiştirilemedi");
     }
 };
