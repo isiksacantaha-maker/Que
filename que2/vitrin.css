@@ -1,11 +1,6 @@
 /* ==========================================================================
    1. GENEL SAYFA YAPISI VE LAYOUT
    ========================================================================== */
-:root {
-    --brand-gold: #d4af37;
-    --brand-gold-mid: #c5a059;
-}
-
 body {
     background-color: #fcfcfc;
     margin: 0;
@@ -44,12 +39,12 @@ body {
     background: rgba(212,175,55,0.05);
     padding: 20px;
     border-radius: 20px;
-    border: 2px dashed var(--brand-gold);
+    border: 2px dashed #d4af37;
 }
 
 .product-grid.edit-active .product-card {
     cursor: move;
-    border: 2px solid var(--brand-gold);
+    border: 2px solid #d4af37;
     background: linear-gradient(135deg, #fff 0%, #fffbf0 100%);
 }
 
@@ -66,74 +61,6 @@ body {
     position: relative;
     transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
     border: 1px solid #f0f0f0;
-}
-
-.product-skeleton {
-    pointer-events: none;
-}
-
-.skeleton-block,
-.skeleton-line {
-    position: relative;
-    overflow: hidden;
-    background: #ececec;
-}
-
-.skeleton-block::after,
-.skeleton-line::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    transform: translateX(-100%);
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0));
-    animation: skeleton-shimmer 1.25s linear infinite;
-}
-
-.skeleton-line {
-    height: 12px;
-    border-radius: 999px;
-    margin-bottom: 10px;
-}
-
-.skeleton-line-title {
-    width: 70%;
-}
-
-.skeleton-line-price {
-    width: 35%;
-}
-
-.load-error-box {
-    grid-column: span 3;
-    text-align: center;
-    padding: 24px 16px;
-    border: 1px solid #ececec;
-    border-radius: 18px;
-    background: #fafafa;
-    color: #555;
-}
-
-.retry-load-btn {
-    margin-top: 10px;
-    border: 1px solid #111;
-    background: #fff;
-    color: #111;
-    border-radius: 999px;
-    padding: 8px 16px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s ease;
-}
-
-.retry-load-btn:hover {
-    background: #111;
-    color: #fff;
-}
-
-@keyframes skeleton-shimmer {
-    100% {
-        transform: translateX(100%);
-    }
 }
 
 .product-card:hover {
@@ -223,20 +150,12 @@ body {
     transition: color 0.3s;
 }
 
-.checkbox-group label:hover { color: var(--brand-gold-mid); }
+.checkbox-group label:hover { color: #c5a059; }
 
 .checkbox-group input[type="checkbox"] {
     width: 18px; height: 18px;
     accent-color: #000;
     cursor: pointer;
-}
-
-.mobile-filter-toggle {
-    display: none;
-}
-
-.mobile-filter-content {
-    display: block;
 }
 
 /* ==========================================================================
@@ -255,7 +174,7 @@ body {
 .product-card:hover .card-actions { opacity: 1; }
 
 .action-btn {
-    width: 48px; height: 48px;
+    width: 40px; height: 40px;
     border-radius: 50%;
     border: 1px solid rgba(255,255,255,0.3);
     background: rgba(255,255,255,0.4);
@@ -360,7 +279,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    touch-action: pan-y;
 }
 
 .main-detail-img {
@@ -503,13 +421,13 @@ body {
 
 .btn-fav:hover {
     background: #fff;
-    border-color: var(--brand-gold);
-    color: var(--brand-gold);
+    border-color: #d4af37;
+    color: #d4af37;
 }
 
 .btn-fav.active {
-    background: var(--brand-gold);
-    border-color: var(--brand-gold);
+    background: #d4af37;
+    border-color: #d4af37;
     color: #fff;
 }
 
@@ -596,7 +514,7 @@ body {
 
 /* UPLOAD ZONE */
 .upload-zone {
-    border: 2px dashed var(--brand-gold);
+    border: 2px dashed #d4af37;
     padding: 30px;
     border-radius: 20px;
     margin-bottom: 30px;
@@ -613,7 +531,7 @@ body {
 
 .upload-zone i {
     font-size: 32px;
-    color: var(--brand-gold);
+    color: #d4af37;
     margin-bottom: 10px;
 }
 
@@ -645,7 +563,7 @@ body {
 }
 
 .preview-wrapper:hover {
-    border-color: var(--brand-gold);
+    border-color: #d4af37;
     box-shadow: 0 4px 12px rgba(212,175,55,0.2);
 }
 
@@ -673,38 +591,29 @@ body {
 
 .delete-img-btn {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(255, 255, 255, 0.85);
-    color: #444;
-    width: 24px;
-    height: 24px;
+    top: 5px; right: 5px;
+    background: #ff3b30;
+    color: #fff;
+    width: 28px; height: 28px;
     border-radius: 50%;
-    font-size: 11px;
+    font-size: 14px;
     display: flex; 
     align-items: center; 
     justify-content: center;
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.95);
+    border: 2px solid #fff;
     z-index: 10;
     transition: all 0.3s ease;
     opacity: 0;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
 }
 
 .preview-wrapper:hover .delete-img-btn {
     opacity: 1;
-    transform: translateY(0);
 }
 
 .delete-img-btn:hover {
-    background: rgba(255, 255, 255, 1);
-    color: #b4232f;
-    border-color: rgba(180, 35, 47, 0.15);
-    transform: scale(1.08);
-    box-shadow: 0 10px 20px rgba(180, 35, 47, 0.18);
+    background: #ff1744;
+    transform: scale(1.15);
 }
 
 /* FORM INPUTS */
@@ -733,7 +642,7 @@ body {
 }
 
 .edit-input:focus {
-    border-color: var(--brand-gold);
+    border-color: #d4af37;
     background: #fff;
     box-shadow: 0 0 0 3px rgba(212,175,55,0.1);
 }
@@ -763,7 +672,7 @@ body {
 }
 
 .edit-select:focus {
-    border-color: var(--brand-gold);
+    border-color: #d4af37;
     background: #fff;
 }
 
@@ -1024,7 +933,7 @@ body {
 }
 
 .admin-edit-trigger:hover {
-    background: var(--brand-gold);
+    background: #d4af37;
     transform: scale(1.15);
     box-shadow: 0 6px 20px rgba(212,175,55,0.5);
 }
@@ -1043,130 +952,11 @@ body {
 }
 
 @media (max-width: 900px) {
-    .main-container {
-        flex-direction: column;
-        gap: 22px;
-        padding: 0 14px;
-    }
-
+    .main-container { flex-direction: column; }
     .filter-sidebar { 
-        width: 100%;
-        min-width: auto;
-        position: relative;
-        top: 0;
+        width: 100%; min-width: auto; 
+        position: relative; top: 0; 
         order: -1; /* Filtreyi mobilde üste alır */
-        z-index: 80;
-        padding: 16px;
-        border-radius: 20px;
-        border: 1px solid rgba(0,0,0,0.06);
-        background: linear-gradient(160deg, rgba(255,255,255,0.96), rgba(247,247,247,0.92));
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
-    }
-
-    .mobile-filter-toggle {
-        width: 100%;
-        height: 46px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border: 1px solid #e9e9e9;
-        border-radius: 14px;
-        background: #fff;
-        color: #1a1a1a;
-        padding: 0 14px;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.2px;
-        cursor: pointer;
-        margin-bottom: 12px;
-    }
-
-    .mobile-filter-toggle i {
-        font-size: 14px;
-        transition: transform 0.25s ease;
-    }
-
-    .filter-sidebar.mobile-open .mobile-filter-toggle i {
-        transform: rotate(180deg);
-    }
-
-    .mobile-filter-content {
-        max-height: 0;
-        overflow: hidden;
-        opacity: 0;
-        transform: translateY(-6px);
-        transition: max-height 0.28s ease, opacity 0.2s ease, transform 0.2s ease;
-    }
-
-    .filter-sidebar.mobile-open .mobile-filter-content {
-        max-height: 560px;
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    .filter-group {
-        margin-bottom: 14px;
-    }
-
-    .filter-group:last-child {
-        margin-bottom: 0;
-    }
-
-    .filter-group h4 {
-        font-size: 11px;
-        letter-spacing: 1.2px;
-        margin-bottom: 10px;
-        padding-bottom: 8px;
-    }
-
-    .filter-select {
-        width: 100%;
-        height: 44px;
-        padding: 0 14px;
-        border-radius: 12px;
-        border: 1px solid #e5e5e5;
-        background: #fff;
-        color: #1a1a1a;
-        font-size: 14px;
-        font-weight: 500;
-        outline: none;
-        box-sizing: border-box;
-    }
-
-    .filter-select:focus {
-        border-color: var(--brand-gold);
-        box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
-    }
-
-    .checkbox-group {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-    }
-
-    .checkbox-group label {
-        gap: 8px;
-        margin: 0;
-        min-height: 40px;
-        padding: 0 10px;
-        border-radius: 12px;
-        border: 1px solid #ececec;
-        background: #fff;
-        font-size: 13px;
-        color: #222;
-    }
-
-    .checkbox-group label:hover {
-        color: #111;
-        border-color: #d9d9d9;
-    }
-
-    .checkbox-group input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        accent-color: var(--brand-gold);
     }
     
     /* MOBİL DETAY MODAL */
@@ -1203,14 +993,6 @@ body {
     
     .detail-buttons {
         flex-direction: column;
-        gap: 8px;
-        margin-top: 10px;
-        position: sticky;
-        bottom: 0;
-        background: #fff;
-        padding-top: 8px;
-        padding-bottom: calc(8px + env(safe-area-inset-bottom));
-        z-index: 3;
     }
     
     .btn-fav, .btn-update {
@@ -1221,36 +1003,6 @@ body {
 
 @media (max-width: 600px) {
     .product-grid { grid-template-columns: 1fr; }
-
-    .main-container {
-        padding: 0 10px;
-        gap: 16px;
-    }
-
-    .filter-sidebar {
-        top: 0;
-        border-radius: 16px;
-        padding: 12px;
-    }
-
-    .mobile-filter-toggle {
-        height: 42px;
-        border-radius: 12px;
-        font-size: 12px;
-        padding: 0 12px;
-        margin-bottom: 10px;
-    }
-
-    .checkbox-group {
-        grid-template-columns: 1fr 1fr;
-        gap: 7px;
-    }
-
-    .checkbox-group label {
-        min-height: 38px;
-        padding: 0 8px;
-        font-size: 12px;
-    }
     
     .detail-modal {
         max-height: 95vh;
@@ -1259,13 +1011,11 @@ body {
     }
     
     .gallery-close-btn {
-        position: fixed;
-        top: max(12px, calc(env(safe-area-inset-top) + 12px));
-        right: max(10px, calc(env(safe-area-inset-right) + 10px));
+        top: 15px;
+        right: 15px;
         width: 36px;
         height: 36px;
         font-size: 18px;
-        z-index: 12001;
     }
     
     .main-img-wrapper {

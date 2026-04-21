@@ -150,63 +150,6 @@
             text-transform: uppercase;
         }
 
-        .order-products {
-            margin-top: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .order-product-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #fbfbfb;
-            border: 1px solid #f0f0f0;
-            border-radius: 10px;
-            padding: 8px;
-        }
-
-        .order-product-row.linkable {
-            text-decoration: none;
-            color: inherit;
-            cursor: pointer;
-            transition: border-color 0.2s ease, transform 0.2s ease;
-        }
-
-        .order-product-row.linkable:hover {
-            border-color: #d4af37;
-            transform: translateY(-1px);
-        }
-
-        .order-product-thumb {
-            width: 42px;
-            height: 42px;
-            object-fit: cover;
-            border-radius: 8px;
-            background: #f2f2f2;
-            flex-shrink: 0;
-        }
-
-        .order-product-meta {
-            min-width: 0;
-            flex: 1;
-        }
-
-        .order-product-name {
-            font-size: 12px;
-            font-weight: 600;
-            color: #222;
-            margin: 0;
-            overflow-wrap: anywhere;
-        }
-
-        .order-product-qty {
-            font-size: 11px;
-            color: #777;
-            margin-top: 2px;
-        }
-
         .hidden {
             display: none;
         }
@@ -224,92 +167,12 @@
         .whatsapp-btn {
             background: #25D366; color: #fff; border: none; padding: 12px 25px; border-radius: 50px; font-weight: bold; text-decoration: none; display: inline-block; margin: 15px 0;
         }
-
-        @media (max-width: 768px) {
-            body {
-                padding-top: 96px;
-            }
-
-            .profile-container {
-                margin: 0 10px;
-                padding: 16px;
-                border-radius: 16px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-            }
-
-            h2 {
-                letter-spacing: 2px;
-                font-size: 20px;
-                margin-bottom: 20px;
-            }
-
-            .tabs {
-                gap: 8px;
-                margin-bottom: 18px;
-                overflow-x: auto;
-                justify-content: flex-start;
-                padding-bottom: 2px;
-            }
-
-            .tab-btn {
-                flex: 0 0 auto;
-                font-size: 11px;
-                letter-spacing: 0.4px;
-                padding-bottom: 10px;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            .full-width {
-                grid-column: span 1;
-            }
-
-            input,
-            textarea {
-                padding: 12px 14px;
-                border-radius: 14px;
-            }
-
-            .btn-gold {
-                width: 100%;
-                padding: 14px;
-                border-radius: 12px;
-                font-size: 13px;
-            }
-
-            .order-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-                padding: 14px;
-                border-radius: 14px;
-            }
-
-            .order-products {
-                width: 100%;
-            }
-
-            .order-product-row {
-                width: 100%;
-                box-sizing: border-box;
-            }
-
-            .return-box {
-                width: calc(100% - 24px);
-                box-sizing: border-box;
-                padding: 18px;
-                border-radius: 16px;
-            }
-        }
     </style>
 </head>
 
 <body>
 
-    <nav class="navbar">
+    <nav class="navbar">git add .
         <div class="nav-left">
             <a href="index.html" class="nav-link">Ana Sayfa</a>
             <a href="vitrin.html" class="nav-link">Koleksiyon</a>
@@ -334,20 +197,12 @@
             <div class="info-grid">
 
                 <div class="input-group">
-                    <label>ADINIZ</label>
-                    <input type="text" id="p-name" placeholder="Adınız">
-                </div>
-                <div class="input-group">
-                    <label>SOYADINIZ</label>
-                    <input type="text" id="p-surname" placeholder="Soyadınız">
+                    <label>AD SOYAD</label>
+                    <input type="text" id="p-name">
                 </div>
                 <div class="input-group">
                     <label>TELEFON NUMARASI</label>
                     <input type="tel" id="p-phone" placeholder="05XX XXX XX XX">
-                </div>
-                <div class="input-group">
-                    <label>ŞEHİR</label>
-                    <input type="text" id="p-city" placeholder="Şehrinizi yazınız">
                 </div>
                 <div class="input-group full-width">
                     <label>TESLİMAT ADRESİ</label>
@@ -406,7 +261,6 @@
         </div>
     </div>
 
-    <script src="api.js"></script>
     <script src="script.js"></script>
     <script>
         // GÜVENLİK KONTROLÜ: Giriş yapmayan bu sayfayı göremez
@@ -420,19 +274,12 @@
             }
 
             // VERİLERİ YÜKLE
-            const shippingInfo = JSON.parse(sessionStorage.getItem('que_shipping_info')) || {};
-            const fullName = (sessionStorage.getItem('currentUser') || '').trim();
-            const nameParts = fullName ? fullName.split(/\s+/) : [];
-            const firstName = (shippingInfo.name || nameParts[0] || '').trim();
-            const surname = (shippingInfo.surname || nameParts.slice(1).join(' ') || '').trim();
-            const displayName = `${firstName} ${surname}`.trim() || 'HESABIM';
+            const name = sessionStorage.getItem('currentUser');
+            document.getElementById('userNameTitle').innerText = name.toUpperCase();
 
-            document.getElementById('userNameTitle').innerText = displayName.toUpperCase();
-            document.getElementById('p-name').value = firstName;
-            document.getElementById('p-surname').value = surname;
-            document.getElementById('p-phone').value = shippingInfo.phone || sessionStorage.getItem('userPhone') || "";
-            document.getElementById('p-city').value = shippingInfo.city || sessionStorage.getItem('userCity') || "";
-            document.getElementById('p-address').value = shippingInfo.address || sessionStorage.getItem('userAddress') || "";
+            document.getElementById('p-name').value = name;
+            document.getElementById('p-phone').value = sessionStorage.getItem('userPhone') || "";
+            document.getElementById('p-address').value = sessionStorage.getItem('userAddress') || "";
 
             // SİPARİŞLERİ RENDER ET
             renderOrders();
@@ -454,31 +301,8 @@
         }
 
         function saveInfo() {
-            const firstName = (document.getElementById('p-name').value || '').trim();
-            const surname = (document.getElementById('p-surname').value || '').trim();
-            const phone = (document.getElementById('p-phone').value || '').trim();
-            const city = (document.getElementById('p-city').value || '').trim();
-            const address = (document.getElementById('p-address').value || '').trim();
-            const fullName = `${firstName} ${surname}`.trim();
-
-            sessionStorage.setItem('currentUser', fullName);
-            sessionStorage.setItem('userPhone', phone);
-            sessionStorage.setItem('userAddress', address);
-            sessionStorage.setItem('userCity', city);
-
-            document.getElementById('userNameTitle').innerText = (fullName || 'HESABIM').toUpperCase();
-
-            const shippingInfo = JSON.parse(sessionStorage.getItem('que_shipping_info')) || {};
-            const mergedShipping = {
-                ...shippingInfo,
-                name: firstName || shippingInfo.name || '',
-                surname: surname || shippingInfo.surname || '',
-                phone: phone || shippingInfo.phone || '',
-                city: city || shippingInfo.city || '',
-                address: address || shippingInfo.address || ''
-            };
-            sessionStorage.setItem('que_shipping_info', JSON.stringify(mergedShipping));
-
+            sessionStorage.setItem('userPhone', document.getElementById('p-phone').value);
+            sessionStorage.setItem('userAddress', document.getElementById('p-address').value);
             alert("Bilgileriniz başarıyla güncellendi ✨");
         }
 
@@ -487,102 +311,27 @@
             sessionStorage.removeItem('userRole');
             sessionStorage.removeItem('currentUser');
             sessionStorage.removeItem('currentUserEmail');
-            sessionStorage.removeItem('authToken');
-            sessionStorage.removeItem('userPhone');
-            sessionStorage.removeItem('userAddress');
-            sessionStorage.removeItem('userCity');
-            sessionStorage.removeItem('que_shipping_info');
             // Sayfayı anasayfaya yönlendir, navbar kendini otomatik "Giriş Yap"a çekecek
             window.location.href = 'index.html';
         }
 
         let currentReturnOrderId = null;
 
-        function orderEscape(value) {
-            if (window.escapeHtml) return window.escapeHtml(value);
-            return String(value ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        function orderImage(value) {
-            if (window.safeImageSrc) return window.safeImageSrc(value);
-            return String(value || '').trim() || 'placeholder.jpg';
-        }
-
-        function formatMoney(value) {
-            const amount = Number(value);
-            return Number.isFinite(amount) ? `${amount.toLocaleString('tr-TR')} TL` : '0 TL';
-        }
-
-        function getOrderDisplayId(order) {
-            return order.orderNumber || order.id || order._id || 'Bilinmiyor';
-        }
-
         async function renderOrders() {
             const ordersContainer = document.getElementById('orders-section'); // HTML'deki sipariş alanı ID'si
             let allOrders = [];
-            try {
-                allOrders = await API.getOrders();
-            } catch (error) {
-                const errorText = String(error?.message || '');
-                const tokenMissing = !sessionStorage.getItem('authToken');
-                const unauthorized = tokenMissing || errorText.includes('401') || errorText.toLowerCase().includes('yetkisiz');
-
-                if (unauthorized) {
-                    ordersContainer.innerHTML = '<p style="text-align:center; color:#666; margin-top:20px;">Oturumunuz yenilenmeli. Siparişlerinizi görmek için lütfen tekrar giriş yapın.</p>';
-                    setTimeout(() => {
-                        sessionStorage.removeItem('isLoggedIn');
-                        sessionStorage.removeItem('userRole');
-                        sessionStorage.removeItem('authToken');
-                        window.location.href = 'profilim.html';
-                    }, 1200);
-                    return;
-                }
-
-                ordersContainer.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">Siparişler yüklenemedi. Lütfen tekrar deneyin.</p>';
-                return;
-            }
+            allOrders = await API.getOrders();
+            
+            const currentUserEmail = sessionStorage.getItem('currentUserEmail');
             const whatsappNumber = localStorage.getItem('que_whatsapp_number');
 
-            // API artık kullanıcıya göre filtrelenmiş sipariş döndürüyor
-            const userOrders = Array.isArray(allOrders) ? allOrders : [];
-
-            let allProducts = [];
-            try {
-                allProducts = await API.getProducts();
-            } catch (_) {
-                allProducts = [];
-            }
+            // Sadece mevcut kullanıcıya ait siparişleri filtrele
+            const userOrders = allOrders.filter(order => order.userEmail === currentUserEmail);
 
             let htmlContent = '';
 
             const whatsappNumberForLink = "905421031368";
             const whatsappNumberForDisplay = "+90 542 103 13 68";
-
-            const resolveOrderItemImage = (item) => {
-                if (item?.img) return item.img;
-                if (Array.isArray(item?.imgs) && item.imgs[0]) return item.imgs[0];
-
-                const itemName = String(item?.name || '').trim().toLowerCase();
-                if (!itemName) return 'placeholder.jpg';
-
-                const product = allProducts.find(p => String(p?.name || '').trim().toLowerCase() === itemName);
-                return (product?.imgs && product.imgs[0]) ? product.imgs[0] : 'placeholder.jpg';
-            };
-
-            const resolveOrderItemProductId = (item) => {
-                if (item?.productId) return item.productId;
-
-                const itemName = String(item?.name || '').trim().toLowerCase();
-                if (!itemName) return '';
-
-                const product = allProducts.find(p => String(p?.name || '').trim().toLowerCase() === itemName);
-                return product?._id || '';
-            };
 
             // WhatsApp Bilgi Kutusu (Sipariş listesinin başında)
             if (whatsappNumberForDisplay) {
@@ -590,7 +339,7 @@
                     <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 15px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; text-align: left;">
                         <div>
                             <h4 style="margin:0; color: #166534; font-size: 15px; display:flex; align-items:center; gap:8px;"><i class="fab fa-whatsapp"></i> Müşteri Destek Hattı</h4>
-                            <p style="margin:5px 0 0; font-size: 13px; color: #15803d;">Siparişlerinizle ilgili sorularınız için: <strong>${orderEscape(whatsappNumberForDisplay)}</strong></p>
+                            <p style="margin:5px 0 0; font-size: 13px; color: #15803d;">Siparişlerinizle ilgili sorularınız için: <strong>${whatsappNumberForDisplay}</strong></p>
                         </div>
                         <a href="https://wa.me/${whatsappNumberForLink}" target="_blank" style="background: #25D366; color: white; padding: 10px 20px; border-radius: 30px; text-decoration: none; font-size: 13px; font-weight:bold;">Mesaj Gönder</a>
                     </div>
@@ -600,89 +349,45 @@
             // Duruma göre renk belirleme
             const getStatusColor = (status) => {
                 if (status === 'Hazırlanıyor') return '#f39c12'; // Turuncu
-                if (status === 'Kargoya Teslim Edildi' || status === 'Yolda' || status === 'Kargoda') return '#3498db'; // Mavi
+                if (status === 'Yolda' || status === 'Kargoda') return '#3498db'; // Mavi
                 if (status === 'Tamamlandı' || status === 'Teslim Edildi') return '#27ae60'; // Yeşil
                 if (status === 'İptal Edildi') return '#e74c3c'; // Kırmızı
                 if (status === 'İade Talebi') return '#9b59b6'; // Mor
-                if (status === 'İade Talebi Değerlendiriliyor') return '#8e44ad'; // Mor koyu
-                if (status === 'İade Talebi Reddedildi') return '#c0392b'; // Kırmızı koyu
-                if (status === 'İade Talebi Onaylandı') return '#16a085'; // Yeşil-mavi
                 return '#999';
             };
-
-            if (userOrders.length === 0) {
-                htmlContent += '<p style="text-align:center; color:#999; margin-top:12px;">Henüz bir siparişiniz bulunmamaktadır.</p>';
-                ordersContainer.innerHTML = htmlContent;
-                return;
-            }
 
             // Siparişleri sondan başa (en yeni en üstte) listele
             htmlContent += userOrders.reverse().map(order => {
                 let actionButton = '';
                 
                 // İPTAL SENARYOSU: Henüz kargoya verilmediyse
-                const orderActionId = getOrderDisplayId(order);
-
                 if (['Hazırlanıyor', 'Ödendi - Hazırlanıyor', 'Havale Bekleniyor', 'Kapıda Ödeme - Hazırlanıyor', 'Onaylandı'].includes(order.status)) {
-                    actionButton = `<button onclick="cancelOrder('${orderActionId}')" style="background: #fff; border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">SİPARİŞİ İPTAL ET</button>`;
+                    actionButton = `<button onclick="cancelOrder('${order.id}')" style="background: #fff; border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">SİPARİŞİ İPTAL ET</button>`;
                 }
                 
                 // İADE SENARYOSU: Kargoya verildiyse veya tamamlandıysa
-                else if (['Kargoya Teslim Edildi', 'Yolda', 'Tamamlandı', 'Teslim Edildi'].includes(order.status)) {
-                    actionButton = `<button onclick="openReturnModal('${orderActionId}')" style="background: #fff; border: 1px solid #333; color: #333; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">İADE ET</button>`;
+                else if (['Yolda', 'Tamamlandı', 'Teslim Edildi'].includes(order.status)) {
+                    actionButton = `<button onclick="openReturnModal('${order.id}')" style="background: #fff; border: 1px solid #333; color: #333; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 10px;">İADE ET</button>`;
                 }
 
                 // İADE TALEBİ ALINDI BİLGİSİ
                 else if (order.status === 'İade Talebi') {
                     actionButton = `<div style="margin-top:10px; font-size:12px; color:#9b59b6; font-weight:600;"><i class="fas fa-clock"></i> İade talebiniz inceleniyor...</div>`;
                 }
-                else if (order.status === 'İade Talebi Değerlendiriliyor') {
-                    actionButton = `<div style="margin-top:10px; font-size:12px; color:#8e44ad; font-weight:600;"><i class="fas fa-search"></i> İade talebiniz değerlendiriliyor...</div>`;
-                }
-                else if (order.status === 'İade Talebi Reddedildi') {
-                    actionButton = `<div style="margin-top:10px; font-size:12px; color:#c0392b; font-weight:600;"><i class="fas fa-times-circle"></i> İade talebiniz reddedildi.</div>`;
-                }
-                else if (order.status === 'İade Talebi Onaylandı') {
-                    actionButton = `<div style="margin-top:10px; font-size:12px; color:#16a085; font-weight:600;"><i class="fas fa-check-circle"></i> İade talebiniz onaylandı.</div>`;
-                }
-
-                const orderItemsHtml = (Array.isArray(order.items) ? order.items : []).map(item => {
-                    const productId = resolveOrderItemProductId(item);
-                    const safeItemName = orderEscape(item.name || 'Ürün');
-                    const safeItemImage = orderImage(resolveOrderItemImage(item));
-                    const rowInner = `
-                        <img class="order-product-thumb" src="${safeItemImage}" alt="${safeItemName}">
-                        <div class="order-product-meta">
-                            <p class="order-product-name">${safeItemName}</p>
-                            <div class="order-product-qty">Adet: ${Number.parseInt(item.quantity, 10) || 1}</div>
-                        </div>
-                    `;
-
-                    if (productId) {
-                        return `<a class="order-product-row linkable" href="vitrin.html?productId=${encodeURIComponent(productId)}&source=orders" title="Ürünü vitrinde görüntüle">${rowInner}</a>`;
-                    }
-
-                    return `<div class="order-product-row">${rowInner}</div>`;
-                }).join('');
 
                 return `
         <div class="order-item" style="border: 1px solid #eee; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
             <div style="text-align: left;">
-                <span style="color: #aaa; font-size: 11px; letter-spacing:1px;">SİPARİŞ NO: ${orderEscape(getOrderDisplayId(order))}</span>
-                <div class="order-products">${orderItemsHtml || '<div style="font-size:12px;color:#999;">Ürün detayı bulunamadı.</div>'}</div>
-                <small style="color: #999;">${orderEscape(order.date || '')}</small>
-                <div style="margin-top:10px; font-size:12px; color:#666; line-height:1.7;">
-                    <div>Ara Toplam: <strong>${formatMoney(order.subtotal)}</strong></div>
-                    <div>Kargo: <strong>${formatMoney(order.shippingFee)}</strong></div>
-                    ${Number(order.extraFee) > 0 ? `<div>Ek Ücret: <strong>${formatMoney(order.extraFee)}</strong></div>` : ''}
-                </div>
+                <span style="color: #aaa; font-size: 11px; letter-spacing:1px;">SİPARİŞ NO: ${order.id}</span>
+                <div style="font-weight: 500; margin-top: 5px;">${order.items.map(item => item.name).join(', ')}</div>
+                <small style="color: #999;">${order.date}</small>
             </div>
             <div style="text-align: right;">
                 <div class="status" style="font-size: 11px; background: ${getStatusColor(order.status)}20; color: ${getStatusColor(order.status)}; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-bottom: 5px; font-weight:600;">
-                    ${orderEscape(order.status || '')}
+                    ${order.status}
                 </div>
-                <div style="font-size: 16px; font-weight: 700;">${formatMoney(order.total)}</div>
-                ${order.cargo && order.cargo.trackingNumber ? `<div style="font-size:10px; color:#666; margin-top:4px;">Takip: ${orderEscape(order.cargo.trackingNumber)}</div>` : ''}
+                <div style="font-size: 16px; font-weight: 700;">${order.total.toLocaleString('tr-TR')} TL</div>
+                ${order.cargo && order.cargo.trackingNumber ? `<div style="font-size:10px; color:#666; margin-top:4px;">Takip: ${order.cargo.trackingNumber}</div>` : ''}
                 ${actionButton}
             </div>
         </div>
@@ -695,7 +400,7 @@
         async function cancelOrder(orderId) {
             if(confirm('Siparişinizi iptal etmek istediğinize emin misiniz?')) {
                 let allOrders = await API.getOrders();
-                const order = allOrders.find(o => o.orderNumber === orderId || o.id === orderId || o._id === orderId);
+                const order = allOrders.find(o => o.id === orderId);
                 
                 if (order) {
                     order.status = 'İptal Edildi';
@@ -721,7 +426,7 @@
             if (!currentReturnOrderId) return;
 
             let allOrders = await API.getOrders();
-            const order = allOrders.find(o => o.orderNumber === currentReturnOrderId || o.id === currentReturnOrderId || o._id === currentReturnOrderId);
+            const order = allOrders.find(o => o.id === currentReturnOrderId);
             
             if (order) {
                 order.status = 'İade Talebi';

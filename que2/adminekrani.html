@@ -187,18 +187,6 @@
             letter-spacing: 1px;
         }
 
-        #section-kullanicilar .admin-table th,
-        #section-kullanicilar .admin-table td {
-            color: #000 !important;
-        }
-
-        #admin-user-list,
-        #admin-user-list tr,
-        #admin-user-list td,
-        #admin-user-list td * {
-            color: #000 !important;
-        }
-
         /* SAĞ ÖN İZLEME */
         .preview-sticky {
             position: sticky;
@@ -362,13 +350,10 @@
                             <option value="Hepsi">Tüm Siparişler</option>
                             <option value="Havale Bekleniyor">Havale Bekleyenler</option>
                             <option value="Hazırlanıyor">Hazırlananlar</option>
-                            <option value="Kargoya Teslim Edildi">Kargoya Teslim Edilenler</option>
+                            <option value="Yolda">Yolda Olanlar</option>
                             <option value="Tamamlandı">Tamamlananlar</option>
                             <option value="İptal Edildi">İptal Edilenler</option>
-                            <option value="İade Talebi">İade Talebi</option>
-                            <option value="İade Talebi Değerlendiriliyor">İade Talebi Değerlendiriliyor</option>
-                            <option value="İade Talebi Reddedildi">İade Talebi Reddedildi</option>
-                            <option value="İade Talebi Onaylandı">İade Talebi Onaylandı</option>
+                            <option value="İade Talebi">İade Talepleri</option>
                         </select>
                     </div>
                     <div style="flex: 1;">
@@ -417,9 +402,7 @@
         </div>
     </div>
 
-    <script src="api.js"></script>
     <script src="script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
         // KARGO ŞİRKETLERİ VE API ENTEGRASYONU
         const cargoProviders = {
@@ -475,23 +458,41 @@
             return {
                 trackingNumber: trackingNumber,
                 provider: cargoProviders[provider].name,
-                status: 'Kargoya Teslim Edildi',
+                status: 'Yolda',
                 lastUpdate: new Date().toLocaleString('tr-TR'),
                 location: 'Dağıtım Merkezinde'
             };
         }
 
-        // EXCEL'E AKTARMA FONKSİYONLARI
-        function downloadExcel(data, sheetName, filename) {
-            if (!window.XLSX) {
-                alert('Excel oluşturucu yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
-                return;
+        // EXCEL'E AKTARMA FONKSİYONLARI (YENİ)
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' }); // \uFEFF for BOM to handle UTF-8 in Excel
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
+        }
 
-            const worksheet = XLSX.utils.json_to_sheet(data);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-            XLSX.writeFile(workbook, filename);
+        function convertToCSV(data, headers) {
+            const headerRow = headers.join(',');
+            const rows = data.map(row => {
+                return headers.map(header => {
+                    // Sanitize data: escape commas and quotes
+                    let cell = row[header] === null || row[header] === undefined ? '' : String(row[header]);
+                    cell = cell.replace(/"/g, '""');
+                    if (cell.search(/("|,|\n)/g) >= 0) {
+                        cell = `"${cell}"`;
+                    }
+                    return cell;
+                }).join(',');
+            });
+            return [headerRow, ...rows].join('\n');
         }
 
         async function exportOrdersToExcel() {
@@ -503,8 +504,11 @@
                 return;
             }
 
+            const headers = ['Sipariş ID', 'Tarih', 'Durum', 'Müşteri Adı', 'Müşteri Telefon', 'Müşteri Şehir', 'Müşteri Adres', 'Ürünler', 'Toplam Tutar', 'Kargo Firması', 'Takip Numarası'];
             const data = orders.map(o => ({ 'Sipariş ID': o.orderNumber, 'Tarih': o.date, 'Durum': o.status, 'Müşteri Adı': o.shippingInfo?.name || '', 'Müşteri Telefon': o.shippingInfo?.phone || '', 'Müşteri Şehir': o.shippingInfo?.city || '', 'Müşteri Adres': o.shippingInfo?.address || '', 'Ürünler': (o.items || []).map(item => `${item.quantity}x ${item.name}`).join('; '), 'Toplam Tutar': o.total, 'Kargo Firması': o.cargo?.cargoName || '', 'Takip Numarası': o.cargo?.trackingNumber || '' }));
-            downloadExcel(data, 'Siparisler', 'siparisler.xlsx');
+
+            const csv = convertToCSV(data, headers);
+            downloadCSV(csv, 'siparisler.csv');
         }
 
         async function exportUsersToExcel() {
@@ -516,26 +520,13 @@
                 return;
             }
 
+            const headers = ['İsim Soyad', 'E-Posta', 'Telefon'];
             const data = users.map(u => ({ 'İsim Soyad': u.name, 'E-Posta': u.email, 'Telefon': u.phone || '' }));
-            downloadExcel(data, 'Kullanicilar', 'kullanicilar.xlsx');
+            const csv = convertToCSV(data, headers);
+            downloadCSV(csv, 'kullanicilar.csv');
         }
 
         let uploadedImages = [];
-
-        function forceAdminRelogin(message = 'Oturumunuz yenilenmeli. Lütfen tekrar giriş yapın.') {
-            alert(message);
-            sessionStorage.removeItem('isLoggedIn');
-            sessionStorage.removeItem('userRole');
-            sessionStorage.removeItem('authToken');
-            window.location.href = 'profilim.html';
-        }
-
-        function hasValidAdminSession() {
-            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-            const role = sessionStorage.getItem('userRole');
-            const token = sessionStorage.getItem('authToken');
-            return isLoggedIn && (role === 'admin' || role === 'developer') && !!token;
-        }
 
         // 1. SEKMELER ARASI GEÇİŞ
         function switchSection(target) {
@@ -554,49 +545,25 @@
         // 4. LİSTELEME FONKSİYONLARI (Siparişler/Kullanıcılar)
         async function renderAdminOrders() {
             const list = document.getElementById('admin-order-list');
-            if (!hasValidAdminSession()) {
-                forceAdminRelogin();
-                return;
-            }
             const filter = document.getElementById('order-filter').value;
             const searchTerm = document.getElementById('order-search').value.trim().toLowerCase();
             let originalOrders = [];
-            try {
-                originalOrders = await API.getOrders();
-            } catch (error) {
-                const errorText = String(error?.message || '');
-                if (errorText.includes('401') || errorText.toLowerCase().includes('yetkisiz')) {
-                    forceAdminRelogin();
-                    return;
-                }
-                if (list) {
-                    list.innerHTML = `<tr><td colspan="6" style="color:#c0392b; text-align:center;">Siparişler yüklenemedi: ${errorText || 'Bilinmeyen hata'}</td></tr>`;
-                }
-                return;
-            }
+            originalOrders = await API.getOrders();
             
             // En yeni siparişlerin üstte görünmesi için listeyi ters çeviriyoruz
             let displayOrders = [...originalOrders].reverse();
 
-            // YENİ: Son işlem tarihi 40 günü geçmiş siparişleri admin listesinden gizle
+            // YENİ: Tamamlanmış ve 40 günü geçmiş siparişleri gizle
             const fortyDaysAgo = new Date();
-            fortyDaysAgo.setDate(fortyDaysAgo.getDate() - 40);
+            fortyDaysAgo.setDate(fortyDaysAgo.getDate() - 40); // 30'dan 40'a çıkarıldı
 
-            const getOrderLastActionDate = (order) => {
-                if (order.updatedAt) return new Date(order.updatedAt);
-                if (order.completionDate) return new Date(order.completionDate);
-                if (order.date) {
-                    const parts = String(order.date).split('.');
-                    if (parts.length === 3) {
-                        const [day, month, year] = parts.map(Number);
-                        return new Date(year, month - 1, day);
-                    }
-                    return new Date(order.date);
+            displayOrders = displayOrders.filter(o => {
+                // Eğer sipariş tamamlandıysa ve tamamlanma tarihi varsa kontrol et
+                if (o.status === 'Tamamlandı' && o.completionDate) {
+                    return new Date(o.completionDate) > fortyDaysAgo;
                 }
-                return new Date();
-            };
-
-            displayOrders = displayOrders.filter(o => getOrderLastActionDate(o) > fortyDaysAgo);
+                return true; // Diğer tüm siparişleri (hazırlanan, bekleyen vb.) listede tut
+            });
 
 if (filter !== "Hepsi") displayOrders = displayOrders.filter(o => o.status.includes(filter));
 
@@ -619,12 +586,8 @@ list.innerHTML = displayOrders.map((o, idx) => {
                 let rowStyle = "";
                 if (o.status === 'İptal Edildi') {
                     rowStyle = "background-color: #ffebee;"; // Açık Kırmızı
-                } else if (o.status === 'İade Talebi' || o.status === 'İade Talebi Değerlendiriliyor') {
+                } else if (o.status === 'İade Talebi') {
                     rowStyle = "background-color: #f3e5f5;"; // Açık Mor
-                } else if (o.status === 'İade Talebi Reddedildi') {
-                    rowStyle = "background-color: #fdecec;"; // Açık Kırmızı/Pembe
-                } else if (o.status === 'İade Talebi Onaylandı') {
-                    rowStyle = "background-color: #e8f7ee;"; // Açık Yeşil
                 }
 
                 // YENİ: Aksiyon Butonu Belirleme
@@ -660,13 +623,10 @@ list.innerHTML = displayOrders.map((o, idx) => {
                                 <option ${o.status.startsWith('Havale') ? 'selected' : ''}>Havale Bekleniyor</option>
                                 <option ${o.status.startsWith('Ödendi') ? 'selected' : ''}>Ödendi - Hazırlanıyor</option>
                                 <option ${o.status.startsWith('Kapıda Ödeme') ? 'selected' : ''}>Kapıda Ödeme - Hazırlanıyor</option>
-                                <option ${o.status === 'Kargoya Teslim Edildi' ? 'selected' : ''}>Kargoya Teslim Edildi</option>
+                                <option ${o.status === 'Yolda' ? 'selected' : ''}>Yolda</option>
                                 <option ${o.status === 'Tamamlandı' ? 'selected' : ''}>Tamamlandı</option>
                                 <option ${o.status === 'İptal Edildi' ? 'selected' : ''}>İptal Edildi</option>
                                 <option ${o.status === 'İade Talebi' ? 'selected' : ''}>İade Talebi</option>
-                                <option ${o.status === 'İade Talebi Değerlendiriliyor' ? 'selected' : ''}>İade Talebi Değerlendiriliyor</option>
-                                <option ${o.status === 'İade Talebi Reddedildi' ? 'selected' : ''}>İade Talebi Reddedildi</option>
-                                <option ${o.status === 'İade Talebi Onaylandı' ? 'selected' : ''}>İade Talebi Onaylandı</option>
                             </select>
                         </td>
                         <td style="vertical-align: middle;">
@@ -714,12 +674,12 @@ list.innerHTML = displayOrders.map((o, idx) => {
                         cargoName: cargoProviders[newCargoProvider].name,
                         trackingNumber: newTrackingNumber, // Manuel girilen numarayı kullan
                         trackingAPI: cargoProviders[newCargoProvider].api,
-                        status: cargoInfo?.status || 'Kargoya Teslim Edildi',
+                        status: cargoInfo?.status || 'Yolda',
                         lastUpdate: cargoInfo?.lastUpdate || new Date().toLocaleString('tr-TR'),
                         location: cargoInfo?.location || 'Dağıtım Merkezinde'
                     };
-                    // Kargo bilgisi girildiğinde durumu otomatik "Kargoya Teslim Edildi" yap
-                    order.status = 'Kargoya Teslim Edildi';
+                    // Kargo bilgisi girildiğinde durumu otomatik "Yolda" yap
+                    order.status = 'Yolda';
                     changesMade = true;
                 }
             } 
@@ -744,73 +704,34 @@ list.innerHTML = displayOrders.map((o, idx) => {
                 return;
             }
 
-            let allOrders = [];
             try {
-                if (typeof API !== 'undefined') {
-                    allOrders = await API.getOrders();
-                } else { throw new Error("API missing"); }
-            } catch (e) {
-                allOrders = JSON.parse(localStorage.getItem('que_orders')) || [];
-            }
+                let allOrders = await API.getOrders();
+                const order = allOrders.find(o => o.orderNumber === orderId);
 
-            const orderIndex = allOrders.findIndex(o => o.orderNumber === orderId);
-            if (orderIndex === -1) {
-                showToast("Hata: Sipariş bulunamadı.", 4000);
-                return;
-            }
-
-            const order = allOrders[orderIndex];
-            order.status = 'Ödendi - Hazırlanıyor';
-
-            try {
-                if (typeof API !== 'undefined') {
+                if (order) {
+                    order.status = 'Ödendi - Hazırlanıyor';
                     await API.updateOrder(order);
-                } else { throw new Error("API missing"); }
-            } catch (e) {
-                localStorage.setItem('que_orders', JSON.stringify(allOrders));
+                    showToast(`Sipariş ${order.orderNumber} ödemesi onaylandı.`);
+                    renderAdminOrders();
+                } else {
+                    showToast("Hata: Sipariş bulunamadı.", 4000);
+                }
+            } catch (error) {
+                console.error("Ödeme onayı sırasında hata:", error);
+                showToast("Hata: " + error.message, 4000);
             }
-
-            showToast(`Sipariş ${order.orderNumber} ödemesi onaylandı.`);
-            renderAdminOrders();
         }
 
         // SİPARİŞ DETAY MODALI FONKSİYONLARI
         async function openOrderDetails(orderId) {
             let orders = [];
             orders = await API.getOrders();
-            let products = [];
-            try {
-                products = await API.getProducts();
-            } catch (_) {
-                products = [];
-            }
             
             const order = orders.find(o => o.orderNumber === orderId);
             if(!order) {
                 alert("Sipariş verisi bulunamadı.");
                 return;
             }
-
-            const resolveOrderItemProductId = (item) => {
-                if (item?.productId) return item.productId;
-                const itemName = String(item?.name || '').trim().toLowerCase();
-                if (!itemName) return '';
-                const product = products.find(p => String(p?.name || '').trim().toLowerCase() === itemName);
-                return product?._id || '';
-            };
-
-            const resolveOrderItemImage = (item) => {
-                if (item?.img) return item.img;
-                if (Array.isArray(item?.imgs) && item.imgs[0]) return item.imgs[0];
-                const itemName = String(item?.name || '').trim().toLowerCase();
-                if (!itemName) return 'placeholder.jpg';
-                const product = products.find(p => String(p?.name || '').trim().toLowerCase() === itemName);
-                return (product?.imgs && product.imgs[0]) ? product.imgs[0] : 'placeholder.jpg';
-            };
-
-            const itemSubtotal = (order.items || []).reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-            const orderTotal = typeof order.total === 'number' ? order.total : itemSubtotal;
-            const showShippingNote = itemSubtotal > 0 && itemSubtotal < 3000;
 
             const content = document.getElementById('order-detail-content');
             content.innerHTML = `
@@ -829,33 +750,16 @@ list.innerHTML = displayOrders.map((o, idx) => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${(order.items || []).map(item => {
-                            const productId = resolveOrderItemProductId(item);
-                            const itemNameHtml = productId
-                                ? `<a href="vitrin.html?productId=${encodeURIComponent(productId)}" style="display:flex; align-items:center; gap:8px; color:#111; text-decoration:none;" title="Ürünü vitrinde görüntüle">
-                                        <img src="${resolveOrderItemImage(item)}" alt="${item.name || 'Ürün'}" style="width:34px; height:34px; border-radius:6px; object-fit:cover; border:1px solid #eee;">
-                                        <span>${item.name}</span>
-                                   </a>`
-                                : `<div style="display:flex; align-items:center; gap:8px;">
-                                        <img src="${resolveOrderItemImage(item)}" alt="${item.name || 'Ürün'}" style="width:34px; height:34px; border-radius:6px; object-fit:cover; border:1px solid #eee;">
-                                        <span>${item.name}</span>
-                                   </div>`;
-
-                            return `
-                                <tr style="border-bottom:1px solid #f9f9f9;">
-                                    <td style="padding:12px 5px;">${itemNameHtml}</td>
-                                    <td style="padding:12px 5px;">${item.quantity}</td>
-                                    <td style="padding:12px 5px;">${item.price.toLocaleString('tr-TR')} TL</td>
-                                    <td style="padding:12px 5px; text-align:right; font-weight:600;">${(item.price * item.quantity).toLocaleString('tr-TR')} TL</td>
-                                </tr>
-                            `;
-                        }).join('')}
+                        ${(order.items || []).map(item => `
+                            <tr style="border-bottom:1px solid #f9f9f9;">
+                                <td style="padding:12px 5px;">${item.name}</td>
+                                <td style="padding:12px 5px;">${item.quantity}</td>
+                                <td style="padding:12px 5px;">${item.price.toLocaleString('tr-TR')} TL</td>
+                                <td style="padding:12px 5px; text-align:right; font-weight:600;">${(item.price * item.quantity).toLocaleString('tr-TR')} TL</td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
-                <div style="margin-top:14px; text-align:right;">
-                    <div style="font-size:14px; color:#333;"><strong>Toplam:</strong> ${orderTotal.toLocaleString('tr-TR')} TL</div>
-                    ${showShippingNote ? '<div style="font-size:10px; color:#999; margin-top:3px;">*100 TL kargo ücreti dahil</div>' : ''}
-                </div>
             `;
             document.getElementById('order-detail-modal').style.display = 'flex';
         }
@@ -893,34 +797,14 @@ list.innerHTML = displayOrders.map((o, idx) => {
 
         async function renderAdminUsers() {
             const list = document.getElementById('admin-user-list');
-            if (!hasValidAdminSession()) {
-                forceAdminRelogin();
-                return;
-            }
             let users = [];
-            try {
-                users = await API.getUsers();
-            } catch (error) {
-                const errorText = String(error?.message || '');
-                if (errorText.includes('401') || errorText.toLowerCase().includes('yetkisiz')) {
-                    forceAdminRelogin();
-                    return;
-                }
-                if (list) {
-                    list.innerHTML = `<tr><td colspan="3" style="color:#c0392b; text-align:center;">Kullanıcılar yüklenemedi: ${errorText || 'Bilinmeyen hata'}</td></tr>`;
-                }
-                return;
-            }
+            users = await API.getUsers();
             
-            list.innerHTML = users.map(u => `<tr><td style="color:#000;">${u.name}</td><td style="color:#000;">${u.email}</td><td style="color:#000;">${u.phone || '-'}</td></tr>`).join('');
+            list.innerHTML = users.map(u => `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.phone || '-'}</td></tr>`).join('');
         }
 
         // Başlangıçta siparişler açık
         window.addEventListener('load', () => {
-            if (!hasValidAdminSession()) {
-                forceAdminRelogin('Yönetici/yazılımcı oturumu geçersiz. Lütfen tekrar giriş yapın.');
-                return;
-            }
             document.getElementById('section-siparisler').classList.remove('hidden');
             document.querySelector('.admin-tab.active').click();
             renderAdminOrders();
@@ -931,7 +815,6 @@ list.innerHTML = displayOrders.map((o, idx) => {
             if (confirm('Oturumu kapatmak istediğinize emin misiniz?')) {
                 sessionStorage.removeItem('isLoggedIn');
                 sessionStorage.removeItem('userRole');
-                sessionStorage.removeItem('authToken');
                 window.location.href = 'profilim.html';
             }
         }

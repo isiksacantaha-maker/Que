@@ -3,11 +3,6 @@
    USTPANEL.CSS - PREMIUM BUTIK STANDART NAVIGASYON
    ========================================================================== */
 
-:root {
-    --brand-gold: #d4af37;
-    --brand-gold-mid: #c5a059;
-}
-
 /* NAVBAR ANA YAPI */
 .navbar {
     position: fixed;
@@ -82,14 +77,14 @@
 .nav-right .cart-badge {
     position: absolute;
     top: -2px;   /* Üstten hizalama */
-    right: max(-6px, -0.4vw);  /* Sağdan hizalama */
-    background-color: var(--brand-gold); /* Marka rengine uygun Gold/Altın tonu */
+    right: -8px;  /* Sağdan hizalama */
+    background-color: #d4af37; /* Marka rengine uygun Gold/Altın tonu */
     color: #000;
     font-size: 11px;
     font-weight: bold;
     font-family: Arial, sans-serif;
-    min-width: 24px;
-    height: 24px;
+    min-width: 18px;
+    height: 18px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -107,21 +102,11 @@ body {
     overflow-x: hidden;
 }
 
-img,
-video,
-canvas {
-    max-width: 100%;
-    height: auto;
-}
-
 /* NAVBAR (Sende eksik olan kısım) */
 .navbar {
     position: fixed;
     top: 0;
-    left: 0;
     width: 100%;
-    box-sizing: border-box;
-    align-items: center;
     display: flex;
     justify-content: space-between;
     padding: 20px 5%;
@@ -206,7 +191,7 @@ canvas {
 }
 
 .edit-input:focus {
-    border-color: var(--brand-gold-mid);
+    border-color: #c5a059;
     outline: none;
     box-shadow: 0 0 10px rgba(197, 160, 89, 0.1);
 }
@@ -248,73 +233,3 @@ canvas {
 }
 
 .btn-delete:hover { background: #ff3b30; color: #ffffff; }
-
-/* TELEFONDA ÜST BAR TAŞMASINI ÖNLE */
-@media (max-width: 768px) {
-    html,
-    body {
-        width: 100%;
-        overflow-x: hidden;
-    }
-
-    .container,
-    .profile-container,
-    .checkout-wrapper,
-    .cart-container,
-    .auth-container,
-    .reset-container,
-    .detail-container,
-    .main-container {
-        width: min(100%, 100vw);
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    .navbar {
-        top: 8px;
-        left: 10px;
-        width: calc(100% - 20px);
-        min-height: 48px;
-        height: auto !important;
-        padding: 8px 12px !important;
-        border-radius: 18px;
-        gap: 8px;
-    }
-
-    .nav-left {
-        gap: 10px;
-        min-width: 0;
-    }
-
-    .nav-right {
-        gap: 10px !important;
-    }
-
-    .nav-link {
-        margin: 0;
-        letter-spacing: 0.2px;
-    }
-
-    .nav-left .nav-link {
-        font-size: 12px !important;
-    }
-
-    .nav-right .nav-link {
-        font-size: 18px !important;
-    }
-
-    .nav-right .cart-badge {
-        top: -4px;
-        right: -6px;
-    }
-
-    .profile-container,
-    .auth-container,
-    .reset-container {
-        margin-left: 10px !important;
-        margin-right: 10px !important;
-        padding-left: 14px !important;
-        padding-right: 14px !important;
-        border-radius: 18px !important;
-    }
-}

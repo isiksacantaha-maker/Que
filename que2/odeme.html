@@ -32,17 +32,6 @@
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
         }
 
-        #step1 {
-            grid-column: 1 / -1;
-            display: flex;
-            justify-content: center;
-        }
-
-        #step1 .checkout-section {
-            width: 100%;
-            max-width: 760px;
-        }
-
         /* Step Göstergesi */
         .step-indicator {
             display: flex;
@@ -241,101 +230,8 @@
         }
 
         @media (max-width: 850px) {
-            body {
-                padding-top: 96px;
-            }
-
             .checkout-wrapper {
                 grid-template-columns: 1fr;
-                padding: 12px;
-                gap: 16px;
-            }
-
-            .checkout-section {
-                padding: 20px;
-                border-radius: 16px;
-            }
-
-            #step1 .checkout-section {
-                max-width: 100%;
-            }
-
-            .step-indicator {
-                flex-wrap: wrap;
-                gap: 10px;
-                margin-bottom: 16px;
-            }
-
-            .step {
-                font-size: 11px;
-                gap: 6px;
-            }
-
-            .step-divider {
-                display: none;
-            }
-
-            .input-row {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .button-row {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .next-btn,
-            .pay-btn,
-            .back-btn {
-                padding: 14px;
-                font-size: 13px;
-                letter-spacing: 0.6px;
-            }
-
-            .total-pay {
-                font-size: 21px;
-                margin: 16px 0;
-            }
-
-            .whatsapp-box {
-                width: calc(100% - 24px);
-                padding: 20px;
-                border-radius: 16px;
-                box-sizing: border-box;
-            }
-        }
-
-        @media (max-width: 520px) {
-            .checkout-wrapper {
-                padding: 10px;
-            }
-
-            .checkout-section {
-                padding: 14px;
-            }
-
-            h3 {
-                font-size: 14px;
-                letter-spacing: 1.2px;
-                margin-bottom: 16px;
-                padding-bottom: 10px;
-            }
-
-            .step-circle {
-                width: 28px;
-                height: 28px;
-                font-size: 12px;
-            }
-
-            input {
-                padding: 11px 12px;
-                font-size: 14px;
-            }
-
-            .whatsapp-btn {
-                width: 100%;
-                box-sizing: border-box;
             }
         }
     </style>
@@ -411,17 +307,18 @@
                     <input type="text" id="ship-address" placeholder="Mahalle, Sokak, No...">
                 </div>
 
-                <div class="input-group">
-                    <label>ŞEHİR</label>
-                    <input type="text" id="ship-city" placeholder="Şehrinizi yazınız">
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>ŞEHİR</label>
+                        <input type="text" id="ship-city" placeholder="Şehrinizi yazınız">
+                    </div>
+                    <div class="input-group">
+                        <label>POSTA KODU</label>
+                        <input type="text" id="ship-zip" placeholder="34000">
+                    </div>
                 </div>
 
-                <div class="button-row">
-                    <a href="sepetim.html" class="back-btn" style="display:flex; align-items:center; justify-content:center; text-decoration:none;">
-                        ← SEPETE GERİ DÖN
-                    </a>
-                    <button class="next-btn" onclick="nextStep()">ÖDEME BİLGİLERİNE DEVAM ET →</button>
-                </div>
+                <button class="next-btn" onclick="nextStep()">ÖDEME BİLGİLERİNE DEVAM ET →</button>
             </div>
         </div>
 
@@ -432,11 +329,11 @@
 
                 <!-- Banka Havalesi Bilgisi -->
                 <div id="bank-transfer-info" style="padding: 20px; background: #ffffff; border-radius: 10px;">
-    <h4 style="color: #000000; margin-bottom: 10px;">Banka Havalesi Bilgilendirmesi</h4>
+    <h4 style="color: #000000;">Banka Hesap Bilgilerimiz</h4>
     
-    <p style="font-size: 13px; color: #666; line-height: 1.6;">Lütfen havale/EFT yaparken açıklama alanına sipariş numaranızı ekleyin. Ödeme kontrolünün ardından siparişiniz hazırlanarak kargoya teslim edilir.</p>
+    <p style="font-size: 13px; color: #666;">Lütfen aşağıdaki hesaba havale/EFT yaparken açıklama kısmına sipariş numaranızı yazmayı unutmayın. Siparişiniz, ödeme onaylandıktan sonra kargoya verilecektir.</p>
     
-    <ul style="list-style: none; padding: 0; font-size: 14px; color: #000000; line-height: 1.8;">
+    <ul style="list-style: none; padding: 0; font-size: 14px; color: #000000;">
         <li><strong>Banka:</strong> Que Bankası A.Ş.</li>
         <li><strong>Alıcı:</strong> QUE JEWELRY SAN. TİC. LTD. ŞTİ.</li>
         <li><strong>IBAN:</strong> TR00 0000 0000 0000 0000 0000 00</li>
@@ -451,7 +348,7 @@
                 </div>
 
                 <p style="text-align: center; font-size: 10px; color: #aaa; margin-top: 15px;">
-                    <i class="fas fa-lock"></i> Bilgileriniz güvenli bağlantı ile korunur.
+                    <i class="fas fa-lock"></i> Bilgileriniz güvence altındadır.
                 </p>
             </div>
         </div>
@@ -462,12 +359,12 @@
     <script src="script.js"></script>
     <script>
         let currentStep = 1;
-
-        function nextStep() {
+ 
+        async function nextStep() {
             if (saveShippingInfo()) {
                 currentStep = 2;
                 updateStepDisplay();
-                updateCheckoutTotal();
+                await updateCheckoutTotal();
             }
         }
 
@@ -505,7 +402,25 @@
         }
 
         async function updateCheckoutTotal() {
-            await updateCartTotal();
+            const cart = JSON.parse(sessionStorage.getItem('que_cart')) || [];
+            let allProducts = [];
+            try {
+                allProducts = await API.getProducts();
+            } catch (error) {
+                console.error("API'den ürünler alınamadı:", error);
+                alert("Ödeme özeti yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.");
+                return;
+            }
+            let total = 0;
+
+            cart.forEach(cartItem => {
+                const product = allProducts.find(p => p._id === cartItem.id);
+                if (product) {
+                    total += product.price * (cartItem.quantity || 1);
+                }
+            });
+
+            document.getElementById('checkout-total').innerText = total.toLocaleString('tr-TR') + " TL";
         }
 
         window.onload = async () => {
@@ -518,22 +433,11 @@
                 return;
             }
 
-            // Giriş kontrolü (misafir ödeme seçeneğini destekler)
+            // Giriş kontrolü
             const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-            const authToken = sessionStorage.getItem('authToken');
-            const checkoutMode = sessionStorage.getItem('checkout_mode') || (isLoggedIn ? 'member' : 'guest');
-
-            if (isLoggedIn && !authToken) {
-                alert('Oturumunuz güncellendi. Lütfen tekrar giriş yapınız.');
-                sessionStorage.removeItem('isLoggedIn');
-                sessionStorage.removeItem('userRole');
-                sessionStorage.removeItem('authToken');
-                window.location.href = 'profilim.html';
-                return;
-            }
-
-            if (!isLoggedIn && checkoutMode === 'member') {
-                alert('Ödemeye devam etmek için lütfen giriş yapınız.');
+            const userEmail = sessionStorage.getItem('currentUserEmail');
+            if (!isLoggedIn || !userEmail) {
+                alert('Ödeme yapabilmek için lütfen giriş yapınız.');
                 window.location.href = 'profilim.html';
                 return;
             }
@@ -545,7 +449,7 @@
             loadShippingInfo();
 
             // Giriş yapmışsa ad/soyad doldur
-            if (isLoggedIn) {
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
                 const currentUser = sessionStorage.getItem('currentUser') || '';
                 const nameParts = currentUser.split(' ');
                 if (document.getElementById('ship-name') && !document.getElementById('ship-name').value) 

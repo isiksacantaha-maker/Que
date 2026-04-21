@@ -4,21 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Koleksiyon | Que Jewelry</title>
-    <meta name="description" content="Que Jewelry koleksiyonu: kolye, küpe, bilezik ve yüzük modellerini inceleyin.">
-    <meta name="robots" content="index,follow,max-image-preview:large">
-    <link rel="canonical" href="https://quejew.com/vitrin.html">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Koleksiyon | Que Jewelry">
-    <meta property="og:description" content="Que Jewelry koleksiyonu: kolye, küpe, bilezik ve yüzük modellerini inceleyin.">
-    <meta property="og:url" content="https://quejew.com/vitrin.html">
-    <meta property="og:image" content="https://quejew.com/og-image.jpg">
-    <meta property="og:image:alt" content="Que Jewelry Koleksiyon">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Koleksiyon | Que Jewelry">
-    <meta name="twitter:description" content="Que Jewelry koleksiyonu: kolye, küpe, bilezik ve yüzük modellerini inceleyin.">
-    <meta name="twitter:image" content="https://quejew.com/og-image.jpg">
-    <link rel="preload" href="placeholder.jpg" as="image">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="üstpanel.css">
     <link rel="stylesheet" href="vitrin.css">
@@ -56,18 +41,9 @@
 
             <div id="product-list" class="product-grid">
                 </div>
-            <div id="product-list-load-more" style="display:none; text-align:center; margin: 28px 0 8px;">
-                <button id="load-more-products-btn" class="view-all-btn" type="button" onclick="loadMoreProducts()">DAHA FAZLA YÜKLE</button>
-            </div>
         </main>
 
         <aside class="filter-sidebar">
-            <button id="mobile-filter-toggle" class="mobile-filter-toggle" type="button" onclick="toggleMobileFilters()" aria-expanded="false" aria-controls="mobile-filter-content">
-                <span>Sıralama ve Kategoriler</span>
-                <i class="fas fa-sliders-h"></i>
-            </button>
-
-            <div id="mobile-filter-content" class="mobile-filter-content">
             <div id="admin-only-tools" class="admin-box hidden">
                 <button class="admin-btn-sort" onclick="toggleEditMode()">
                     <i class="fas fa-sort"></i> Sıralamayı Düzenle
@@ -93,7 +69,6 @@
                     <label><input type="checkbox" class="cat-filter" value="Diğer" onchange="filterProducts()"> Diğerleri</label>
                 </div>
             </div>
-            </div>
         </aside>
 
     </div> <div id="edit-overlay" class="edit-panel-overlay">
@@ -110,10 +85,6 @@
                 <div class="upload-zone" id="drop-zone">
                     <i class="fas fa-images"></i>
                     <p>Fotoğrafları Sürükleyin (En Fazla 5)</p>
-                    <button type="button" class="btn-cancel" style="margin-bottom: 12px;" onclick="openEditFilePicker(event)">
-                        <i class="fas fa-folder-open"></i> DOSYA SEÇ
-                    </button>
-                    <input type="file" id="edit-image-input" accept="image/*" multiple style="display:none;">
                     <div id="image-previews" class="preview-grid"></div>
                 </div>
 
@@ -180,10 +151,6 @@
                 <div class="upload-zone" id="drop-zone-add">
                     <i class="fas fa-images"></i>
                     <p>Fotoğrafları Sürükleyin (En Fazla 5)</p>
-                    <button type="button" class="btn-cancel" style="margin-bottom: 12px;" onclick="openAddFilePicker(event)">
-                        <i class="fas fa-folder-open"></i> DOSYA SEÇ
-                    </button>
-                    <input type="file" id="add-image-input" accept="image/*" multiple style="display:none;">
                     <div id="image-previews-add" class="preview-grid"></div>
                 </div>
 
