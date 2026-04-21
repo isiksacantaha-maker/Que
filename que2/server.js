@@ -16,6 +16,7 @@ const ADMIN_PASS = process.env.ADMIN_PASS;
 const DEVELOPER_EMAIL = process.env.DEVELOPER_EMAIL;
 const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_ADMIN_EMAIL = (process.env.GOOGLE_ADMIN_EMAIL || 'isiksacan.taha@gmail.com').trim().toLowerCase();
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
 // MongoDB Bağlantısı
@@ -86,7 +87,7 @@ const User = mongoose.model('User', UserSchema);
 const Order = mongoose.model('Order', OrderSchema);
 
 function buildAuthPayload({ email, name, phone, address, role }) {
-    if (email === ADMIN_EMAIL) {
+    if (email === ADMIN_EMAIL || (GOOGLE_ADMIN_EMAIL && email === GOOGLE_ADMIN_EMAIL)) {
         return { role: 'admin', name: 'Yönetici', email };
     }
 
@@ -297,7 +298,7 @@ app.post('/api/auth/google', async (req, res) => {
             return res.status(401).json({ error: 'Google hesabı doğrulanamadı.' });
         }
 
-        if (email === ADMIN_EMAIL || (DEVELOPER_EMAIL && email === DEVELOPER_EMAIL)) {
+        if (email === ADMIN_EMAIL || (GOOGLE_ADMIN_EMAIL && email === GOOGLE_ADMIN_EMAIL) || (DEVELOPER_EMAIL && email === DEVELOPER_EMAIL)) {
             return res.json(buildAuthPayload({ email }));
         }
 
