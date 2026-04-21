@@ -1,4 +1,11 @@
-const API_URL = "http://localhost:3000/api";
+const API_URL = (() => {
+    if (window.QUE_API_URL) return window.QUE_API_URL;
+
+    const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+    if (isLocal) return "http://localhost:3000/api";
+
+    return `${window.location.origin}/api`;
+})();
 
 const API = {
     // --- ÜRÜN İŞLEMLERİ ---
