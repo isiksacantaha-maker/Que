@@ -2,7 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const path = require('path');
+const { OAuth2Client } = require('google-auth-library');
 
 // .env dosyasındaki ortam değişkenlerini yükler
 require('dotenv').config();
@@ -13,6 +15,8 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASS = process.env.ADMIN_PASS;
 const DEVELOPER_EMAIL = process.env.DEVELOPER_EMAIL;
 const DEVELOPER_PASS = process.env.DEVELOPER_PASS;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
 // MongoDB Bağlantısı
 // Güvenlik için bağlantı adresi .env dosyasından alınır
@@ -81,7 +85,31 @@ const Product = mongoose.model('Product', ProductSchema);
 const User = mongoose.model('User', UserSchema);
 const Order = mongoose.model('Order', OrderSchema);
 
+function buildAuthPayload({ email, name, phone, address, role }) {
+    if (email === ADMIN_EMAIL) {
+        return { role: 'admin', name: 'Yönetici', email };
+    }
+
+    if (DEVELOPER_EMAIL && email === DEVELOPER_EMAIL) {
+        return { role: 'developer', name: 'Yazılımcı', email };
+    }
+
+    return {
+        role: role || 'customer',
+        name,
+        email,
+        phone,
+        address
+    };
+}
+
 // --- API ENDPOINTS ---
+
+app.get('/api/public-config', (req, res) => {
+    res.json({
+        googleClientId: GOOGLE_CLIENT_ID || null
+    });
+});
 
 // 1. ÜRÜNLER
 app.get('/api/products', async (req, res) => {
@@ -223,11 +251,11 @@ app.post('/api/auth/login', async (req, res) => {
 
         // Admin Kontrolü (.env dosyasından güvenli bir şekilde)
         if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
-            return res.json({ role: 'admin', name: 'Yönetici', email: email });
+            return res.json(buildAuthPayload({ email }));
         }
 
         if (DEVELOPER_EMAIL && DEVELOPER_PASS && email === DEVELOPER_EMAIL && pass === DEVELOPER_PASS) {
-            return res.json({ role: 'developer', name: 'Yazılımcı', email: email });
+            return res.json(buildAuthPayload({ email }));
         }
 
         const user = await User.findOne({ email });
@@ -238,11 +266,59 @@ app.post('/api/auth/login', async (req, res) => {
         // Veritabanındaki hash'lenmiş şifre ile kullanıcının girdiği şifreyi karşılaştır
         const isMatch = await bcrypt.compare(pass, user.pass);
         if (isMatch) {
-            res.json({ role: 'customer', name: user.name, email: user.email, phone: user.phone, address: user.address });
+            res.json(buildAuthPayload(user));
         } else {
             res.status(401).json({ error: "Hatalı giriş bilgileri." });
         }
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/auth/google', async (req, res) => {
+    try {
+        if (!googleClient || !GOOGLE_CLIENT_ID) {
+            return res.status(503).json({ error: 'Google girişi henüz yapılandırılmadı.' });
+        }
+
+        const { credential } = req.body;
+        if (!credential) {
+            return res.status(400).json({ error: 'Google kimlik doğrulama verisi eksik.' });
+        }
+
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: GOOGLE_CLIENT_ID
+        });
+
+        const payload = ticket.getPayload();
+        const email = (payload?.email || '').trim().toLowerCase();
+        const name = payload?.name || 'Google Kullanıcısı';
+
+        if (!payload?.email_verified || !email) {
+            return res.status(401).json({ error: 'Google hesabı doğrulanamadı.' });
+        }
+
+        if (email === ADMIN_EMAIL || (DEVELOPER_EMAIL && email === DEVELOPER_EMAIL)) {
+            return res.json(buildAuthPayload({ email }));
+        }
+
+        let user = await User.findOne({ email });
+        if (!user) {
+            user = new User({
+                name,
+                email,
+                pass: crypto.randomBytes(24).toString('hex'),
+                role: 'customer'
+            });
+            await user.save();
+        } else if (!user.name && name) {
+            user.name = name;
+            await user.save();
+        }
+
+        return res.json(buildAuthPayload(user));
+    } catch (err) {
+        return res.status(401).json({ error: 'Google girişi doğrulanamadı.' });
+    }
 });
 
 app.post('/api/users/change-password', async (req, res) => {
